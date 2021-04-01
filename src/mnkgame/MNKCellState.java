@@ -1,7 +1,7 @@
 /*
  *  Copyright (C) 2021 Pietro Di Lena
  *  
- *  This file is part of the MNKGame v1.0 software developed for the
+ *  This file is part of the MNKGame v2.0 software developed for the
  *  students of the course "Algoritmi e Strutture di Dati" first 
  *  cycle degree/bachelor in Computer Science, University of Bologna
  *  A.Y. 2020-2021.

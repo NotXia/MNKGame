@@ -1,7 +1,7 @@
 /*
  *  Copyright (C) 2021 Pietro Di Lena
  *  
- *  This file is part of the MNKGame v1.0 software developed for the
+ *  This file is part of the MNKGame v2.0 software developed for the
  *  students of the course "Algoritmi e Strutture di Dati" first 
  *  cycle degree/bachelor in Computer Science, University of Bologna
  *  A.Y. 2020-2021.
@@ -49,15 +49,15 @@ public class MNKBoard {
    */
 	public final int K;
 
-	private final MNKCellState[][]    B;
-	private final LinkedList<MNKCell> MC;  // Marked Cells
-	private final HashSet<MNKCell>    FC;  // Free Cells
+	protected final MNKCellState[][]    B;
+	protected final LinkedList<MNKCell> MC;  // Marked Cells
+	protected final HashSet<MNKCell>    FC;  // Free Cells
 
 	private final MNKCellState[] Player = {MNKCellState.P1,MNKCellState.P2};
 
-	private int          currentPlayer;   // currentPlayer plays next move
+	protected int          currentPlayer;   // currentPlayer plays next move
 
-	private MNKGameState gameState;       // game state
+	protected MNKGameState gameState;       // game state
 	
 	/**
    * Create a board of size MxN and initialize the game parameters
@@ -78,7 +78,8 @@ public class MNKBoard {
 		this.K  = K;
 
 		B  = new MNKCellState[M][N];
-		FC = new HashSet<MNKCell>((int) Math.ceil((M*N) / 0.75));
+		// Initial capacity large enough to assure load factor < 0.75
+		FC = new HashSet<MNKCell>((int) Math.ceil((M*N) / 0.75)); 
 		MC = new LinkedList<MNKCell>();
 
 		reset();
@@ -106,7 +107,7 @@ public class MNKBoard {
 	 */
 	public MNKCellState cellState(int i, int j) throws IndexOutOfBoundsException {
 		if(i < 0 || i >= M || j < 0 || j >= N)
-			throw new IndexOutOfBoundsException("Indexes " + i +"," + j + " are out of matrix bounds");
+			throw new IndexOutOfBoundsException("Indexes " + i + "," + j + " are out of matrix bounds");
 		else
 			return B[i][j];
 	}
@@ -152,7 +153,7 @@ public class MNKBoard {
 			MNKCell newc = new MNKCell(i,j,Player[currentPlayer]);
 
 			B[i][j] = Player[currentPlayer];
-			
+
 			FC.remove(oldc);
 			MC.add(newc);
 			
@@ -245,6 +246,7 @@ public class MNKBoard {
 		for(int k = 1; i-k >= 0 && B[i-k][j] == s; k++) n++; // backward check
 		for(int k = 1; i+k <  M && B[i+k][j] == s; k++) n++; // forward check
 		if(n >= K) return true;
+		
 
 		// Diagonal check
 		n = 1;
@@ -255,7 +257,7 @@ public class MNKBoard {
 		// Anti-diagonal check
 		n = 1;
 		for(int k = 1; i-k >= 0 && j+k < N  && B[i-k][j+k] == s; k++) n++; // backward check
-		for(int k = 1; i+k <  N && j-k >= 0 && B[i+k][j-k] == s; k++) n++; // backward check
+		for(int k = 1; i+k <  M && j-k >= 0 && B[i+k][j-k] == s; k++) n++; // backward check
 		if(n >= K) return true;
 
 		return false;
