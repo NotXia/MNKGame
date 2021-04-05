@@ -22,11 +22,11 @@ public class OurPlayer implements MNKPlayer {
         MNKCell outCell;
 
         if (this.decisionTree.isEmpty()) {
-            if (this.first) { // Gioco per primo, offensivo
+            if (this.first) {
                 outCell = new MNKCell(rows/2, columns/2, MNKCellState.P1);
                 this.decisionTree.generate(outCell);
             }
-            else {            // Gioco per secondo, difensivo
+            else {
                 this.decisionTree.generate(MC[MC.length-1]);
                 outCell = this.decisionTree.nextMove();
             }
@@ -46,8 +46,19 @@ public class OurPlayer implements MNKPlayer {
     public static void main(String[] args) {
         OurPlayer p = new OurPlayer();
 
-        p.initPlayer(3, 3, 3, true, 10);
-        p.selectCell(new MNKCell[1], new MNKCell[1]);
+        p.initPlayer(3, 3, 3, false, 10);
+
+        MNKCell[] mc = new MNKCell[1];
+        mc[0] = new MNKCell(2, 0, MNKCellState.P2);
+        p.selectCell(new MNKCell[1], mc);
+
+        p.selectCell(new MNKCell[1], mc);
+
+/*        mc = new MNKCell[2];
+        mc[0] = new MNKCell(2, 2, MNKCellState.P2);
+        mc[1] = new MNKCell(0, 0, MNKCellState.P2);
+        p.selectCell(new MNKCell[1], mc);*/
+
         System.out.println("Creato");
         p.decisionTree.print();
 

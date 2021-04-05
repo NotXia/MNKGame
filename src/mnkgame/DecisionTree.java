@@ -5,11 +5,18 @@ import java.util.LinkedList;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+ *
+ * java -cp ".." mnkgame.MNKGame 4 4 4 mnkgame.OurPlayer
+ *
+ * **/
+
 public class DecisionTree {
     private Node root;
-    private int rows, columns, target;
+    private int rows, columns, target, curr_target;
     private boolean first;
-    private MNKCellState my_state, opponent_state;
+    private final MNKCellState MY_STATE, OPPONENT_STATE;
+    private final MNKGameState WIN_STATE, LOSS_STATE;
     private int maxScore, minScore;
 
 
@@ -18,9 +25,14 @@ public class DecisionTree {
         this.rows = M;
         this.columns = N;
         this.target = K;
+        this.curr_target = 2;
+
         this.first = first;
-        this.my_state = first ? MNKCellState.P1 : MNKCellState.P2;
-        this.opponent_state = first ? MNKCellState.P2 : MNKCellState.P1;
+        this.MY_STATE = first ? MNKCellState.P1 : MNKCellState.P2;
+        this.OPPONENT_STATE = first ? MNKCellState.P2 : MNKCellState.P1;
+        this.WIN_STATE = first ? MNKGameState.WINP1 : MNKGameState.WINP2;
+        this.LOSS_STATE = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
+
         this.maxScore = M*N;
         this.minScore = -(M*N);
     }
@@ -29,80 +41,8 @@ public class DecisionTree {
         return root == null;
     }
 
-    private boolean isValidCoord(int x, int y) {
+    private boolean isValidCell(int x, int y) {
         return (x >= 0 && x < rows) && (y >= 0 && y < columns);
-    }
-
-    private MNKGameState boardStatus(MNKCellState[][] board, int boardSize, int x, int y) {
-        MNKCellState toCheckState = board[x][y];
-        MNKCellState me = first ? MNKCellState.P1 : MNKCellState.P2;
-
-        MNKGameState win = first ? MNKGameState.WINP1 : MNKGameState.WINP2;
-        MNKGameState loss = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
-        int aligned;
-        MNKGameState result;
-
-        if (toCheckState == me) {
-            result = win;
-        }
-        else {
-            result = loss;
-        }
-
-        // VERTICALE
-        aligned = 1;
-        for (int i=1; i<=target && x-i>=0; i++) { // Sx
-            if (board[x-i][y] == toCheckState) { aligned++; }
-            else { break; }
-        }
-        for (int i=1; i<=target && x+i<rows; i++) { // Dx
-            if (board[x+i][y] == toCheckState) { aligned++; }
-            else { break; }
-        }
-        if (aligned >= target) { return result; }
-
-        // ORIZZONTALE
-        aligned = 1;
-        for (int i=1; i<=target && y-i>=0; i++) { // Alto
-            if (board[x][y-i] == toCheckState) { aligned++; }
-            else { break; }
-        }
-        for (int i=1; i<=target && y+i<columns; i++) { // Basso
-            if (board[x][y+i] == toCheckState) { aligned++; }
-            else { break; }
-        }
-        if (aligned >= target) { return result; }
-
-        // OBLIQUO SX a DX
-        aligned = 1;
-        for (int i=1; i<=target && x-i>=0 && y-i>=0; i++) { // Alto sx
-            if (board[x-i][y-i] == toCheckState) { aligned++; }
-            else { break; }
-        }
-        for (int i=1; i<=target && x+i<rows && y+i<columns; i++) { // Basso dx
-            if (board[x+i][y+i] == toCheckState) { aligned++; }
-            else { break; }
-        }
-        if (aligned >= target) { return result; }
-
-        // OBLIQUO DX a SX
-        aligned = 1;
-        for (int i=1; i<=target && x+i<rows && y-i>=0; i++) { // Alto dx
-            if (board[x+i][y-i] == toCheckState) { aligned++; }
-            else { break; }
-        }
-        for (int i=1; i<=target && x-i>=0 && y+i<columns; i++) { // Basso sx
-            if (board[x-i][y+i] == toCheckState) { aligned++; }
-            else { break; }
-        }
-        if (aligned >= target) { return result; }
-
-        if (boardSize == rows*columns) {
-            return MNKGameState.DRAW;
-        }
-        else {
-            return MNKGameState.OPEN;
-        }
     }
 
     private int alphabeta(Node node, boolean mePlaying, int alpha, int beta) {
@@ -113,20 +53,20 @@ public class DecisionTree {
             int eval;
 
             if (mePlaying) {
-                eval = 10;
+                eval = maxScore+1;
                 int i = 0;
                 for (Node child : node.children) {
                     eval = Math.min(eval, alphabeta(child, false, alpha, beta));
                     beta = Math.min(eval, beta);
                     if (beta <= alpha) {
-                        node.children.subList(i+1, node.children.size()).clear();
+                        node.children.subList(i+1, node.children.size()).clear(); /** Verificare se bisogna potare anche i figli prima (e non solo quelli dopo) **/
                         break;
                     }
                     i++;
                 }
             }
             else {
-                eval = -10;
+                eval = minScore-1;
                 int i = 0;
                 for (Node child : node.children) {
                     eval = Math.max(eval, alphabeta(child, true, alpha, beta));
@@ -144,29 +84,15 @@ public class DecisionTree {
         }
     }
 
+
     private Node createTree(Node toEval, boolean mePlaying, int depth, MNKCellState[][] board, int boardSize) {
-        /*System.out.println(toEval);*/
-        MNKGameState status = boardStatus(board, boardSize, toEval.action.i, toEval.action.j);
-        /*for (int a=0; a<rows; a++) {
-            for (int b=0; b<columns; b++) {
-                System.out.print(board[a][b] + " ");
-            }
-            System.out.println();
-        }
-        System.out.println(status);
-        System.out.println();*/
+        MNKGameState gameState = boardStatus(board, boardSize, toEval.action.i, toEval.action.j);
 
-
-        if (status == MNKGameState.OPEN) {
+        if (gameState == MNKGameState.OPEN) {
+            // Tiene traccia delle celle già elaborate
             HashMap<String, Boolean> hasBeenEvaluated = new HashMap<>();
 
-            /**
-             *
-             * TODO: Manca il nodo della mossa del nemico fuori dal nostro raggio di valutazione
-             * (Serve veramente?)
-             *
-             * **/
-
+            // Valuta tutte le celle adiacenti a quelle già marcate
             for (MNKCell markedCell : toEval.getMarkedCells()) {
                 for (int i=-1; i<=1; i++) {
                     for (int j=-1; j<=1; j++) {
@@ -175,16 +101,26 @@ public class DecisionTree {
                         int toVisit_x = markedCell.i+i;
                         int toVisit_y = markedCell.j+j;
 
-                        if (isValidCoord(toVisit_x, toVisit_y) && hasBeenEvaluated.get(""+toVisit_x+" "+toVisit_y) == null) {
-                            if (board[toVisit_x][toVisit_y] == null) {
-                                MNKCellState state = mePlaying ? my_state : opponent_state;
-                                MNKCell toEvalCell = new MNKCell(toVisit_x, toVisit_y, state);
+                        if (isValidCell(toVisit_x, toVisit_y)) {
+                            if (board[toVisit_x][toVisit_y] == null && hasBeenEvaluated.get(""+toVisit_x+" "+toVisit_y) == null) {
+                                MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
 
-                                Node child = new Node(toEval, toEvalCell, rows, columns, target);
+                                MNKCell toEvalCell = new MNKCell(toVisit_x, toVisit_y, state);
+                                Node child = new Node(toEval, toEvalCell);
 
                                 board[toVisit_x][toVisit_y] = state;
-                                toEval.children.addFirst( createTree(child, !mePlaying, depth+1, board, boardSize+1) );
+                                // A parità di punteggio si darà priorità alle mosse in celle centrali
+                                if (toVisit_x == 0 || toVisit_x == rows-1 || toVisit_y == 0 || toVisit_y == columns-1) {
+                                    toEval.children.addLast( createTree(child, !mePlaying, depth+1, board, boardSize+1) );
+                                }
+                                else {
+                                    toEval.children.addFirst( createTree(child, !mePlaying, depth+1, board, boardSize+1) );
+                                }
                                 board[toVisit_x][toVisit_y] = null;
+
+                                /*if (alphabeta(toEval, !mePlaying, minScore, maxScore) > 0) {
+                                    return toEval;
+                                }*/
 
                                 hasBeenEvaluated.put(""+toVisit_x+" "+toVisit_y, true);
                             }
@@ -192,16 +128,13 @@ public class DecisionTree {
                     }
                 }
             }
-
-            alphabeta(toEval, !mePlaying, minScore, maxScore); /** <-- CONTROLLARE i parametri di chiamata **/
+            alphabeta(toEval, !mePlaying, minScore, maxScore);
         }
         else {
-            MNKGameState win = first ? MNKGameState.WINP1 : MNKGameState.WINP2;
-            MNKGameState loss = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
-            if (status == win) {
+            if (gameState == WIN_STATE) {
                 toEval.score = maxScore - depth;
             }
-            else if (status == loss) {
+            else if (gameState == LOSS_STATE) {
                 toEval.score = minScore + depth;
             }
             else {
@@ -213,7 +146,7 @@ public class DecisionTree {
     }
 
     public void generate(MNKCell markedCell) {
-        root = new Node(null, markedCell, rows, columns, target);
+        root = new Node(null, markedCell);
 
         MNKCellState[][] board = new MNKCellState[rows][columns];
         board[markedCell.i][markedCell.j] = markedCell.state;
@@ -221,7 +154,26 @@ public class DecisionTree {
         createTree(root, !first, 0, board, 1);
     }
 
+    public void generate(Node newRoot) {
+        this.root = newRoot;
+        MNKCellState[][] board = new MNKCellState[rows][columns];
+        int boardSize = 0;
+        boolean mePlaying = newRoot.action.state == MY_STATE ? true : false;
+
+        for (MNKCell cell : newRoot.getMarkedCells()) {
+            board[cell.i][cell.j] = cell.state;
+            boardSize++;
+        }
+
+        createTree(root, !mePlaying, 0, board, boardSize);
+    }
+
     public void setOpponentMove(MNKCell move) {
+        if (root.isLeaf() && curr_target < target) {
+            curr_target++;
+            generate(root);
+        }
+
         Node bestChild = root.children.getFirst();
 
         for (Node child : root.children) {
@@ -235,10 +187,17 @@ public class DecisionTree {
         }
 
         root = bestChild;
-        root.parent = null;
+        //root.parent = null;
     }
-
+    /**
+     * TODO: Eliminare i figli >:D
+     * **/
     public MNKCell nextMove() {
+        if (root.isLeaf() && curr_target < target) {
+            curr_target++;
+            generate(root);
+        }
+
         Node bestChild = root.children.getFirst();
 
         for (Node child : root.children) {
@@ -248,11 +207,80 @@ public class DecisionTree {
         }
 
         root = bestChild;
-        root.parent = null;
+        //root.parent = null;
 
         return bestChild.action;
     }
 
+
+    private MNKGameState boardStatus(MNKCellState[][] board, int boardSize, int x, int y) {
+        MNKCellState toCheckState = board[x][y];
+
+        int aligned;
+        MNKGameState result;
+
+        if (toCheckState == MY_STATE) {
+            result = WIN_STATE;
+        }
+        else {
+            result = LOSS_STATE;
+        }
+
+        // VERTICALE
+        aligned = 1;
+        for (int i=1; i<=curr_target && x-i>=0; i++) { // Sx
+            if (board[x-i][y] == toCheckState) { aligned++; }
+            else { break; }
+        }
+        for (int i=1; i<=curr_target && x+i<rows; i++) { // Dx
+            if (board[x+i][y] == toCheckState) { aligned++; }
+            else { break; }
+        }
+        if (aligned >= curr_target) { return result; }
+
+        // ORIZZONTALE
+        aligned = 1;
+        for (int i=1; i<=curr_target && y-i>=0; i++) { // Alto
+            if (board[x][y-i] == toCheckState) { aligned++; }
+            else { break; }
+        }
+        for (int i=1; i<=curr_target && y+i<columns; i++) { // Basso
+            if (board[x][y+i] == toCheckState) { aligned++; }
+            else { break; }
+        }
+        if (aligned >= curr_target) { return result; }
+
+        // OBLIQUO SX a DX
+        aligned = 1;
+        for (int i=1; i<=curr_target && x-i>=0 && y-i>=0; i++) { // Alto sx
+            if (board[x-i][y-i] == toCheckState) { aligned++; }
+            else { break; }
+        }
+        for (int i=1; i<=curr_target && x+i<rows && y+i<columns; i++) { // Basso dx
+            if (board[x+i][y+i] == toCheckState) { aligned++; }
+            else { break; }
+        }
+        if (aligned >= curr_target) { return result; }
+
+        // OBLIQUO DX a SX
+        aligned = 1;
+        for (int i=1; i<=curr_target && x+i<rows && y-i>=0; i++) { // Alto dx
+            if (board[x+i][y-i] == toCheckState) { aligned++; }
+            else { break; }
+        }
+        for (int i=1; i<=curr_target && x-i>=0 && y+i<columns; i++) { // Basso sx
+            if (board[x-i][y+i] == toCheckState) { aligned++; }
+            else { break; }
+        }
+        if (aligned >= curr_target) { return result; }
+
+        if (boardSize == rows*columns) {
+            return MNKGameState.DRAW;
+        }
+        else {
+            return MNKGameState.OPEN;
+        }
+    }
 
     public void print() {
         FileWriter myWriter;

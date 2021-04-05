@@ -8,7 +8,7 @@ public class Node {
     public MNKCell action;
     public int score;
 
-    public Node(Node parent, MNKCell action, int M, int N, int K) {
+    public Node(Node parent, MNKCell action) {
         this.parent = parent;
         this.children = new LinkedList<>();
         this.action = action;
