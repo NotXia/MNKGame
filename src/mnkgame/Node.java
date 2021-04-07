@@ -12,7 +12,7 @@ public class Node {
         this.parent = parent;
         this.children = new LinkedList<>();
         this.action = action;
-        score = 42;
+        score = 0;
     }
 
     public LinkedList<MNKCell> getMarkedCells() {
