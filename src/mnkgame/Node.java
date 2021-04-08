@@ -1,16 +1,17 @@
 package mnkgame;
 
+import java.util.PriorityQueue;
 import java.util.LinkedList;
 
 public class Node {
     public Node parent;
-    public LinkedList<Node> children;
+    public PriorityQueue<Node> children;
     public MNKCell action;
     public int score;
 
     public Node(Node parent, MNKCell action) {
         this.parent = parent;
-        this.children = new LinkedList<>();
+        this.children = new PriorityQueue<>((node1, node2) -> node2.score - node1.score);
         this.action = action;
         score = 0;
     }
@@ -40,4 +41,5 @@ public class Node {
                 ", score=" + score +
                 " }";
     }
+
 }

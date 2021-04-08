@@ -23,7 +23,7 @@ public class OurPlayer implements MNKPlayer {
 
         if (this.decisionTree.isEmpty()) {
             if (this.first) {
-                outCell = new MNKCell(rows/2, columns/2, MNKCellState.P1);
+                outCell = new MNKCell(columns/2, rows/2, MNKCellState.P1);
                 this.decisionTree.generate(outCell);
             }
             else {
