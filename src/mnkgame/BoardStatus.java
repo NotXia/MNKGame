@@ -35,8 +35,10 @@ public class BoardStatus {
     }
 
     public void removeAt(int x, int y) {
-        matrix[x][y] = MNKCellState.FREE;
-        size--;
+        if (matrix[x][y] != MNKCellState.FREE) {
+            matrix[x][y] = MNKCellState.FREE;
+            size--;
+        }
     }
 
     public boolean isFreeAt(int x, int y) {
