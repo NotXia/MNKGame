@@ -26,6 +26,7 @@ public class BoardStatus {
         }
         else {
             matrix[x][y] = MNKCellState.FREE;
+            size--;
         }
     }
 
