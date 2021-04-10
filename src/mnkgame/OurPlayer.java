@@ -53,7 +53,6 @@ public class OurPlayer implements MNKPlayer {
 
         System.out.println("Creato");
         p.decisionTree.print();
-
     }
 
  }

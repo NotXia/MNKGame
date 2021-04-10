@@ -4,8 +4,10 @@ public class BoardStatus {
     private MNKCellState[][] matrix;
     private int size;
     int columns, rows, target;
+    MNKCellState playerState;
+    int player_best, opponent_best;
 
-    public BoardStatus(int columns, int rows, int target) {
+    public BoardStatus(int columns, int rows, int target, MNKCellState playerState) {
         matrix = new MNKCellState[columns][rows];
         for (int y=0; y<rows; y++) {
             for (int x=0; x<columns; x++) {
@@ -17,7 +19,41 @@ public class BoardStatus {
         this.columns = columns;
         this.rows = rows;
         this.target = target;
+        this.playerState = playerState;
+        this.player_best = -1;
+        this.opponent_best = -1;
     };
+
+    public int getScore() {
+        return player_best - opponent_best;
+    }
+
+    private void update_best(int x, int y) {
+        MNKCellState toCheckState = matrix[x][y];
+        if (toCheckState == MNKCellState.FREE) { return; }
+
+        int aligned = Math.max(
+            getVerticallyAlignedAt(x, y, new MNKCellState[]{toCheckState}),
+            Math.max(
+                getHorizontallyAlignedAt(x, y, new MNKCellState[]{toCheckState}),
+                Math.max(
+                    getLeftRightObliquelyAlignedAt(x, y, new MNKCellState[]{toCheckState}),
+                    getRightLeftObliquelyAlignedAt(x, y, new MNKCellState[]{toCheckState})
+                )
+            )
+        );
+
+        if (toCheckState == playerState) {
+            if (aligned > player_best) {
+                player_best = aligned;
+            }
+        }
+        else {
+            if (aligned > opponent_best) {
+                opponent_best = aligned;
+            }
+        }
+    }
 
     public void setAt(int x, int y, MNKCellState state) {
         if (state != null && state != MNKCellState.FREE) {
@@ -28,6 +64,8 @@ public class BoardStatus {
             matrix[x][y] = MNKCellState.FREE;
             size--;
         }
+
+        update_best(x, y);
     }
 
     public MNKCellState getAt(int x, int y) {
@@ -38,6 +76,7 @@ public class BoardStatus {
         if (matrix[x][y] != MNKCellState.FREE) {
             matrix[x][y] = MNKCellState.FREE;
             size--;
+            update_best(x, y);
         }
     }
 
@@ -126,13 +165,12 @@ public class BoardStatus {
         return aligned;
     }
 
-    public MNKGameState statusAt(int x, int y, MNKCellState playerState) {
+    public MNKGameState statusAt(int x, int y) {
         MNKCellState toCheckState = matrix[x][y];
         if (toCheckState == MNKCellState.FREE) { return MNKGameState.OPEN; };
 
         final MNKGameState WIN_STATE = playerState == MNKCellState.P1 ? MNKGameState.WINP1 : MNKGameState.WINP2;
         final MNKGameState LOSS_STATE = playerState == MNKCellState.P1 ? MNKGameState.WINP2 : MNKGameState.WINP1;
-        int aligned;
         MNKGameState result = toCheckState == playerState ? WIN_STATE : LOSS_STATE;
 
         if (getVerticallyAlignedAt(x, y, new MNKCellState[]{toCheckState}) >= target) { return result; }
