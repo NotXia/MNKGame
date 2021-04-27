@@ -4,6 +4,7 @@ import java.util.LinkedList;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.PriorityQueue;
 
 /**
  *
@@ -11,7 +12,7 @@ import java.io.IOException;
  *
  * **/
 
-public class DecisionTree {
+public class GameTree {
     private Node root;
     private int rows, columns, target;
     private boolean first;
@@ -21,7 +22,7 @@ public class DecisionTree {
     private int maxDepth;
 
 
-    public DecisionTree(int M, int N, int K, boolean first) {
+    public GameTree(int M, int N, int K, boolean first) {
         this.root = null;
         this.rows = M;
         this.columns = N;
@@ -35,7 +36,6 @@ public class DecisionTree {
 
         this.maxScore = M*N;
         this.minScore = -(M*N);
-        this.maxDepth = 6;
     }
 
     public boolean isEmpty() {
@@ -98,10 +98,6 @@ public class DecisionTree {
         return alignable >= target;
     }
 
-    private int probablyAGoodScore(BoardStatus board, int toCheck_x, int toCheck_y) {
-        return board.getScore();
-    }
-
     private Node createTree(Node toEval, boolean mePlaying, int depth, BoardStatus board) {
         MNKGameState gameState = board.statusAt(toEval.action.j, toEval.action.i);
 
@@ -110,15 +106,12 @@ public class DecisionTree {
                 toEval.score = maxScore - depth;
             }
             else if (gameState == LOSS_STATE) {
-                toEval.score = minScore + depth;
+                toEval.score = -1 - depth;
             }
             else {
                 toEval.score = 0;
             }
             toEval.isEndState = true;
-        }
-        else if (depth == maxDepth) {
-            toEval.score = probablyAGoodScore(board, toEval.action.j, toEval.action.i);
         }
         else {
             // Tiene traccia delle celle già elaborate
@@ -135,7 +128,7 @@ public class DecisionTree {
 
                         if (isValidCell(toVisit_x, toVisit_y)) {
                             if (board.isFreeAt(toVisit_x, toVisit_y) && hasBeenEvaluated.get(""+toVisit_x+" "+toVisit_y) == null) {
-                                //if (markedCell.state == OPPONENT_STATE || isProbablyAGoodIdea(board, toVisit_x, toVisit_y, j, i)) {
+                                /*if (markedCell.state == OPPONENT_STATE || isProbablyAGoodIdea(board, toVisit_x, toVisit_y, j, i)) {*/
                                     MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
 
                                     MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
@@ -146,7 +139,7 @@ public class DecisionTree {
                                     board.removeAt(toVisit_x, toVisit_y);
 
                                     hasBeenEvaluated.put(""+toVisit_x+" "+toVisit_y, true);
-                                //}
+                                /*}*/
                             }
                         }
                     }
@@ -165,7 +158,6 @@ public class DecisionTree {
         board.setAt(markedCell.j, markedCell.i, markedCell.state);
 
         createTree(root, !first, 0, board);
-        maxDepth = maxDepth*3/4 == 0 ? 1 : maxDepth*3/4;
     }
 
     public void generate(Node root) {
@@ -179,11 +171,10 @@ public class DecisionTree {
         boolean mePlaying = root.action.state == MY_STATE;
 
         createTree(root, !mePlaying, 0, board);
-        maxDepth = maxDepth*3/4 == 0 ? 1 : maxDepth*3/4;
     }
 
     public void setOpponentMove(MNKCell move) {
-        Node bestChild = root.children.peek();
+        Node bestChild = null;
 
         for (Node child : root.children) {
             if (child.action.equals(move)) {
@@ -192,19 +183,19 @@ public class DecisionTree {
             }
         }
 
-        root = bestChild;
-        //root.parent = null;
-
-        if (!root.isEndState && root.children.size() == 0) {
-            generate(root);
+        if (bestChild == null) {
+            Node new_root = new Node(root, move);
+            root.children.add(new_root);
+            generate(new_root);
         }
+        else {
+            root = bestChild;
+        }
+
     }
-    /**
-     * TODO: Eliminare i figli >:D
-     * **/
+
     public MNKCell nextMove() {
         root = root.children.poll();
-        //root.parent = null;
 
         if (root.score == 0) {
             System.out.println(root.action + " | Gita in SVIZZERA");
@@ -214,10 +205,6 @@ public class DecisionTree {
         }
         else {
             System.out.println(root.action + " | Sulla strada verso la DISFATTA");
-        }
-
-        if (!root.isEndState && root.children.size() == 0) {
-            generate(root);
         }
 
         return root.action;

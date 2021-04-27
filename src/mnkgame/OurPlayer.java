@@ -1,11 +1,9 @@
 package mnkgame;
 
-import java.util.LinkedList;
-
 public class OurPlayer implements MNKPlayer {
     private int rows, columns, target;
     private boolean first;
-    public DecisionTree decisionTree; /** <--------------------- DA RIMETTERE PRIVATE **/
+    public GameTree decisionTree; /** <--------------------- DA RIMETTERE PRIVATE **/
 
     public OurPlayer() {
     }
@@ -15,7 +13,7 @@ public class OurPlayer implements MNKPlayer {
         this.columns = N;
         this.target = K;
         this.first = first;
-        this.decisionTree = new DecisionTree(M, N, K, first);
+        this.decisionTree = new GameTree(M, N, K, first);
     }
 
     public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
@@ -23,7 +21,7 @@ public class OurPlayer implements MNKPlayer {
 
         if (this.decisionTree.isEmpty()) {
             if (this.first) {
-                outCell = new MNKCell(columns/2, rows/2, MNKCellState.P1);
+                outCell = new MNKCell(rows/2, columns/2, MNKCellState.P1);
                 this.decisionTree.generate(outCell);
             }
             else {

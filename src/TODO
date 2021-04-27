@@ -1,0 +1,15 @@
+
+Gestire mosse dell'avversario fuori portata:
+    1) Approccio naive: Rigenera tutto dallo stato attuale
+    2) Approccio meno naive: Aggiusta i nodi necessari
+
+
+
+
+Problemi aperti:
+ > Griglie troppo grandi non possono essere coperte dall'intero albero:
+    - Limitare l'altezza di generazione
+    - Generare soltanto determinati scenari
+    - Approccio divide et impera / DP (?)
+
+ > NOME DI STO COSO
