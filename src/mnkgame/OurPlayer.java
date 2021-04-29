@@ -32,6 +32,7 @@ public class OurPlayer implements MNKPlayer {
         else {
             this.decisionTree.setOpponentMove(MC[MC.length-1]);
             outCell = this.decisionTree.nextMove();
+
         }
 
         return outCell;

@@ -36,6 +36,8 @@ public class GameTree {
 
         this.maxScore = M*N;
         this.minScore = -(M*N);
+
+        this.maxDepth = 5;
     }
 
     public boolean isEmpty() {
@@ -79,34 +81,34 @@ public class GameTree {
         }
     }
 
-    private boolean isProbablyAGoodIdea(BoardStatus board, int toVisit_x, int toVisit_y, int xAxisVariation, int yAxisVariation) {
+    private boolean isProbablyAGoodIdea(BoardStatus board, int toVisit_x, int toVisit_y, int xAxisVariation, int yAxisVariation, MNKCellState toCheckState) {
         int alignable = 0;
 
         if (yAxisVariation == 0 && xAxisVariation != 0) { // Cella orizzontale
-            alignable = board.getHorizontallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ MY_STATE, MNKCellState.FREE });
+            alignable = board.getHorizontallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE });
         }
         else if (xAxisVariation == 0 && yAxisVariation != 0) { // Cella verticale
-            alignable = board.getVerticallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ MY_STATE, MNKCellState.FREE });
+            alignable = board.getVerticallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE });
         }
         else if (xAxisVariation > 0 && yAxisVariation < 0 || xAxisVariation < 0 && yAxisVariation > 0) { // Cella in alto a destra / Cella in basso a sinistra
-            alignable = board.getRightLeftObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ MY_STATE, MNKCellState.FREE });
+            alignable = board.getRightLeftObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE });
         }
         else { // Cella in alto a sinistra / Cella in basso a destra
-            alignable = board.getLeftRightObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ MY_STATE, MNKCellState.FREE });
+            alignable = board.getLeftRightObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE });
         }
 
         return alignable >= target;
     }
 
-    private Node createTree(Node toEval, boolean mePlaying, int depth, BoardStatus board) {
+    private Node createTree(Node toEval, boolean mePlaying, int depth, BoardStatus board, boolean heuristic) {
         MNKGameState gameState = board.statusAt(toEval.action.j, toEval.action.i);
 
         if (gameState != MNKGameState.OPEN) {
             if (gameState == WIN_STATE) {
-                toEval.score = maxScore - depth;
+                toEval.score = 1;
             }
             else if (gameState == LOSS_STATE) {
-                toEval.score = -1 - depth;
+                toEval.score = -1;
             }
             else {
                 toEval.score = 0;
@@ -128,24 +130,24 @@ public class GameTree {
 
                         if (isValidCell(toVisit_x, toVisit_y)) {
                             if (board.isFreeAt(toVisit_x, toVisit_y) && hasBeenEvaluated.get(""+toVisit_x+" "+toVisit_y) == null) {
-                                /*if (markedCell.state == OPPONENT_STATE || isProbablyAGoodIdea(board, toVisit_x, toVisit_y, j, i)) {*/
+                                if (!heuristic || isProbablyAGoodIdea(board, toVisit_x, toVisit_y, j, i, MY_STATE) || isProbablyAGoodIdea(board, toVisit_x, toVisit_y, j, i, OPPONENT_STATE)) {
                                     MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
 
                                     MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
                                     Node child = new Node(toEval, toEvalCell);
 
                                     board.setAt(toVisit_x, toVisit_y, state);
-                                    toEval.children.add( createTree(child, !mePlaying, depth+1, board) );
+                                    toEval.children.add( createTree(child, !mePlaying, depth+1, board, heuristic) );
                                     board.removeAt(toVisit_x, toVisit_y);
 
                                     hasBeenEvaluated.put(""+toVisit_x+" "+toVisit_y, true);
-                                /*}*/
+                                }
                             }
                         }
                     }
                 }
             }
-            alphabeta(toEval, !mePlaying, minScore, maxScore);
+            alphabeta(toEval, !mePlaying, -1, 1);
         }
 
         return toEval;
@@ -157,10 +159,10 @@ public class GameTree {
         BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);
         board.setAt(markedCell.j, markedCell.i, markedCell.state);
 
-        createTree(root, !first, 0, board);
+        createTree(root, !first, 0, board, true);
     }
 
-    public void generate(Node root) {
+    public void generate(Node root, boolean heuristic) {
         this.root = root;
 
         BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);
@@ -170,7 +172,26 @@ public class GameTree {
 
         boolean mePlaying = root.action.state == MY_STATE;
 
-        createTree(root, !mePlaying, 0, board);
+        createTree(root, !mePlaying, 0, board, heuristic);
+    }
+
+    private void removeChildWithMove(Node node, MNKCell move) {
+        LinkedList<Node> to_visit = new LinkedList<>();
+        to_visit.addFirst(node);
+
+        while (to_visit.size() > 0) {
+            Node u = to_visit.removeLast();
+
+            if (u.action.equals(move)) {
+                u.parent.children.remove(node);
+                u.parent = null;
+            }
+            else {
+                for (Node child : u.children) {
+                    to_visit.addFirst(child);
+                }
+            }
+        }
     }
 
     public void setOpponentMove(MNKCell move) {
@@ -186,15 +207,18 @@ public class GameTree {
         if (bestChild == null) {
             Node new_root = new Node(root, move);
             root.children.add(new_root);
-            generate(new_root);
+            generate(new_root, true);
         }
         else {
             root = bestChild;
         }
-
     }
 
     public MNKCell nextMove() {
+        if (root.children.size() == 0) { // Nessuna mossa prevista
+            generate(root, false);
+        }
+
         root = root.children.poll();
 
         if (root.score == 0) {

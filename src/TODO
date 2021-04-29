@@ -1,7 +1,6 @@
 
-Gestire mosse dell'avversario fuori portata:
-    1) Approccio naive: Rigenera tutto dallo stato attuale
-    2) Approccio meno naive: Aggiusta i nodi necessari
+Riportare gli score a 1, 0, -1
+Rivedere gli score: Una partita con target K non potrà terminare prima di aver fatto almeno K turni (Se la griglia è sufficientemente grande)
 
 
 
@@ -11,5 +10,9 @@ Problemi aperti:
     - Limitare l'altezza di generazione
     - Generare soltanto determinati scenari
     - Approccio divide et impera / DP (?)
+
+> Gestire mosse dell'avversario fuori portata:
+        X) Approccio naive: Rigenera tutto dallo stato attuale
+        2) Approccio meno naive: Aggiusta i nodi necessari (Da rivedere)
 
  > NOME DI STO COSO
