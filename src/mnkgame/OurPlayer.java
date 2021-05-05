@@ -17,6 +17,10 @@ public class OurPlayer implements MNKPlayer {
     }
 
     public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
+        long start_t, end_t, elapsed, min;
+        double sec;
+        start_t = System.currentTimeMillis();
+
         MNKCell outCell;
 
         if (this.decisionTree.isEmpty()) {
@@ -32,8 +36,14 @@ public class OurPlayer implements MNKPlayer {
         else {
             this.decisionTree.setOpponentMove(MC[MC.length-1]);
             outCell = this.decisionTree.nextMove();
-
         }
+
+        end_t = System.currentTimeMillis();
+        elapsed = (end_t - start_t);
+        min = elapsed / (60*1000);
+        sec = (elapsed - min*60*1000)/1000.0;
+        System.out.println("Tempo impiegato: " + min + " min " + sec + " sec");
+        System.out.println();
 
         return outCell;
     }

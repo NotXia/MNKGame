@@ -37,7 +37,7 @@ public class GameTree {
         this.maxScore = M*N;
         this.minScore = -(M*N);
 
-        this.maxDepth = 5;
+        this.maxDepth = 4;
     }
 
     public boolean isEmpty() {
@@ -82,20 +82,16 @@ public class GameTree {
     }
 
     private boolean isProbablyAGoodIdea(BoardStatus board, int toVisit_x, int toVisit_y, int xAxisVariation, int yAxisVariation, MNKCellState toCheckState) {
-        int alignable = 0;
-
-        if (yAxisVariation == 0 && xAxisVariation != 0) { // Cella orizzontale
-            alignable = board.getHorizontallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE });
-        }
-        else if (xAxisVariation == 0 && yAxisVariation != 0) { // Cella verticale
-            alignable = board.getVerticallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE });
-        }
-        else if (xAxisVariation > 0 && yAxisVariation < 0 || xAxisVariation < 0 && yAxisVariation > 0) { // Cella in alto a destra / Cella in basso a sinistra
-            alignable = board.getRightLeftObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE });
-        }
-        else { // Cella in alto a sinistra / Cella in basso a destra
-            alignable = board.getLeftRightObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE });
-        }
+        int alignable = Math.max(
+            board.getHorizontallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE }),
+            Math.max(
+                board.getVerticallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE }),
+                Math.max(
+                    board.getRightLeftObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE }),
+                    board.getLeftRightObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE })
+                )
+            )
+        );
 
         return alignable >= target;
     }
@@ -114,6 +110,21 @@ public class GameTree {
                 toEval.score = 0;
             }
             toEval.isEndState = true;
+        }
+        else if (depth == maxDepth) {
+            int opponentScore = board.getScore(OPPONENT_STATE);
+            int playerScore = board.getScore(MY_STATE);
+            int score = playerScore - opponentScore;
+
+            if (score > 0) {
+                toEval.score = 1;
+            }
+            else if (score < 0) {
+                toEval.score = -1;
+            }
+            else {
+                toEval.score = 0;
+            }
         }
         else {
             // Tiene traccia delle celle già elaborate
@@ -175,25 +186,6 @@ public class GameTree {
         createTree(root, !mePlaying, 0, board, heuristic);
     }
 
-    private void removeChildWithMove(Node node, MNKCell move) {
-        LinkedList<Node> to_visit = new LinkedList<>();
-        to_visit.addFirst(node);
-
-        while (to_visit.size() > 0) {
-            Node u = to_visit.removeLast();
-
-            if (u.action.equals(move)) {
-                u.parent.children.remove(node);
-                u.parent = null;
-            }
-            else {
-                for (Node child : u.children) {
-                    to_visit.addFirst(child);
-                }
-            }
-        }
-    }
-
     public void setOpponentMove(MNKCell move) {
         Node bestChild = null;
 
@@ -221,14 +213,16 @@ public class GameTree {
 
         root = root.children.poll();
 
-        if (root.score == 0) {
-            System.out.println(root.action + " | Gita in SVIZZERA");
-        }
-        else if (root.score > 0) {
-            System.out.println(root.action + " | Verso la VITTORIA");
-        }
-        else {
-            System.out.println(root.action + " | Sulla strada verso la DISFATTA");
+        if (true) {
+            if (root.score == 0) {
+                System.out.println(root.action + " | Gita in SVIZZERA " + root.score);
+            }
+            else if (root.score > 0) {
+                System.out.println(root.action + " | Verso la VITTORIA " + root.score);
+            }
+            else {
+                System.out.println(root.action + " | Sulla strada verso la DISFATTA " + root.score);
+            }
         }
 
         return root.action;
