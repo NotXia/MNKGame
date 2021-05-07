@@ -39,7 +39,7 @@ public class GameTree {
         this.minScore = -(M*N);
 
         this.maxDepth = 5;
-        this.MAX_EVAL = 10;
+        this.MAX_EVAL = 5;
     }
 
     public boolean isEmpty() {
@@ -117,21 +117,18 @@ public class GameTree {
         }
         else {
             HashMap<String, Boolean> hasBeenEvaluated = new HashMap<>();
-            board.generateScore();
             PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>((move1, move2) -> move1.score - move2.score);
 
             for (MNKCell markedCell : toEval.getMarkedCells()) {
                 for (int i = -1; i <= 1; i++) {
                     for (int j = -1; j <= 1; j++) {
-                        if (i == 0 && j == 0) {
-                            continue;
-                        }
-
+                        if (i == 0 && j == 0) { continue; }
                         int toVisit_x = markedCell.j + j;
                         int toVisit_y = markedCell.i + i;
 
                         if (isValidCell(toVisit_x, toVisit_y)) {
                             if (board.isFreeAt(toVisit_x, toVisit_y) && hasBeenEvaluated.get(""+toVisit_x+" "+toVisit_y) == null) {
+                                board.generateScoreAt(toVisit_x, toVisit_y);
                                 moves.add(new EvaluationPosition(toVisit_x, toVisit_y, board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE)));
                                 moves.add(new EvaluationPosition(toVisit_x, toVisit_y, board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE)));
                                 hasBeenEvaluated.put(""+toVisit_x+" "+toVisit_y, true);
@@ -157,28 +154,6 @@ public class GameTree {
                 board.removeAt(toVisit_x, toVisit_y);
                 i++;
             }
-
-            /*board.generateScore();
-            PriorityQueue<EvaluationPosition> moves = board.getBestMovesQueue();
-
-            int i=0;
-
-            while (i<MAX_EVAL && moves.size() != 0) {
-                int toVisit_x = moves.peek().x;
-                int toVisit_y = moves.peek().y;
-
-                MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
-
-                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
-                Node child = new Node(toEval, toEvalCell);
-
-                board.setAt(toVisit_x, toVisit_y, state);
-                toEval.children.add( createTree(child, !mePlaying, depth+1, board) );
-                board.removeAt(toVisit_x, toVisit_y);
-                i++;
-            }*/
-
-            //alphabeta(toEval, !mePlaying, -target-1, target+1);
         }
 
         return toEval;
@@ -224,6 +199,7 @@ public class GameTree {
             generate(new_root);
         }
         else {
+            root.setSelectedChild(bestChild);
             root = bestChild;
         }
     }
@@ -233,9 +209,11 @@ public class GameTree {
             generate(root);
         }
 
-        root = root.children.poll();
+        Node nextChild = root.children.poll();
+        root.setSelectedChild(nextChild);
+        root = nextChild;
 
-        if (true) {
+        if (false) {
             if (root.score == 0) {
                 System.out.println(root.action + " | Gita in SVIZZERA " + root.score);
             }

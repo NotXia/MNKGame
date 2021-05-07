@@ -31,6 +31,11 @@ public class Node {
         return markedCells;
     }
 
+    public void setSelectedChild(Node child) {
+        this.children = new PriorityQueue<>((node1, node2) -> node2.score - node1.score);
+        this.children.add(child);
+    }
+
     public boolean isLeaf() {
         return children.size() == 0;
     }

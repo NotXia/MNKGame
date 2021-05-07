@@ -180,14 +180,14 @@ public class BoardStatus {
 
         int i = start_x, j = start_y;
         while (i < columns && j >= 0) {
-            buffer.addLast(matrix[i][j]);
+            buffer.addFirst(matrix[i][j]);
             i++; j--;
         }
 
         i = start_x-1;
         j = start_y+1;
         while (i >= 0 && j < rows) {
-            buffer.addFirst(matrix[i][j]);
+            buffer.addLast(matrix[i][j]);
             i--; j++;
         }
 
@@ -206,126 +206,121 @@ public class BoardStatus {
         }
     }
 
-
-    private void fillRowsScore() {
+    private void fillRowScoreAt(int x, int y) {
+        if (rowScore_player[x][y] != null && rowScore_opponent[x][y] != null) { return; }
         Score[] moves;
 
         // Giocatore
-        for (int i=0; i<rows; i++) {
-            moves = getScoresArray(getRowAt(0, i), PLAYER_STATE);
-
-            for (int j=0; j<columns; j++) {
-                setScore(rowScore_player, j, i, moves[j]);
-            }
+        moves = getScoresArray(getRowAt(x, y), PLAYER_STATE);
+        for (int j=0; j<columns; j++) {
+            setScore(rowScore_player, j, y, moves[j]);
         }
 
         // Avversario
+        moves = getScoresArray(getRowAt(x, y), OPPONENT_STATE);
+        for (int j=0; j<columns; j++) {
+            setScore(rowScore_opponent, j, y, moves[j]);
+        }
+    }
+
+    private void fillRowsScore() {
         for (int i=0; i<rows; i++) {
-            moves = getScoresArray(getRowAt(0, i), OPPONENT_STATE);
-            for (int j=0; j<columns; j++) {
-                setScore(rowScore_opponent, j, i, moves[j]);
-            }
+            fillRowScoreAt(0, i);
+        }
+    }
+
+    private void fillColumnScoreAt(int x, int y) {
+        if (columnScore_player[x][y] != null && columnScore_opponent[x][y] != null) { return; }
+        Score[] moves;
+
+        // Giocatore
+        moves = getScoresArray(getColumnAt(x, y), PLAYER_STATE);
+        for (int j=0; j<rows; j++) {
+            setScore(columnScore_player, x, j, moves[j]);
+        }
+
+        // Avversario
+        moves = getScoresArray(getColumnAt(x, y), OPPONENT_STATE);
+        for (int j=0; j<rows; j++) {
+            setScore(columnScore_opponent, x, j, moves[j]);
         }
     }
 
     private void fillColumnsScore() {
+        for (int i=0; i<columns; i++) {
+            fillColumnScoreAt(i, 0);
+        }
+    }
+
+    private void fillDiagonalLeftRightScoreAt(int x, int y) {
+        if (diagonalLeftRightScore_player[x][y] != null && diagonalLeftRightScore_opponent[x][y] != null) { return; }
         Score[] moves;
 
         // Giocatore
-        for (int i=0; i<columns; i++) {
-            moves = getScoresArray(getColumnAt(i, 0), PLAYER_STATE);
-            for (int j=0; j<rows; j++) {
-                setScore(columnScore_player, i, j, moves[j]);
-            }
+        moves = getScoresArray(getDiagonalLeftRightAt(x, y), PLAYER_STATE);
+        int i = x, j = y;
+        while(i > 0 && j > 0) {
+            i--; j--;
+        }
+        for (int k=0; k<moves.length; k++) {
+            setScore(diagonalLeftRightScore_player, i, j, moves[k]);
+            i++; j++;
         }
 
         // Avversario
-        for (int i=0; i<columns; i++) {
-            moves = getScoresArray(getColumnAt(i, 0), OPPONENT_STATE);
-            for (int j=0; j<rows; j++) {
-                setScore(columnScore_opponent, i, j, moves[j]);
-            }
+        moves = getScoresArray(getDiagonalLeftRightAt(x, y), OPPONENT_STATE);
+        i = x; j = y;
+        while(i > 0 && j > 0) {
+            i--; j--;
+        }
+        for (int k=0; k<moves.length; k++) {
+            setScore(diagonalLeftRightScore_opponent, i, j, moves[k]);
+            i++; j++;
         }
     }
 
     private void fillDiagonalLeftRightScore() {
+        for (int i=0; i<rows; i++) {
+            fillDiagonalLeftRightScoreAt(0, i);
+        }
+        for (int i=1; i<columns; i++) {
+            fillDiagonalLeftRightScoreAt(i, 0);
+        }
+    }
+
+    private void fillDiagonalRightLeftScoreAt(int x, int y) {
+        if (diagonalRightLeftScore_player[x][y] != null && diagonalRightLeftScore_opponent[x][y] != null) { return; }
         Score[] moves;
 
         // Giocatore
-        for (int i=0; i<rows; i++) {
-            moves = getScoresArray(getDiagonalLeftRightAt(0, i), PLAYER_STATE);
-            int x = 0, y = i;
-            while (x < columns && y < rows) {
-                setScore(diagonalLeftRightScore_player, x, y, moves[x]);
-                x++; y++;
-            }
+        moves = getScoresArray(getDiagonalRightLeftAt(x, y), PLAYER_STATE);
+        int i = x, j = y;
+        while (i < columns-1 && j > 0) {
+            i++; j--;
         }
-        for (int i=1; i<columns; i++) {
-            moves = getScoresArray(getDiagonalLeftRightAt(i, 0), PLAYER_STATE);
-            int x = i, y = 0;
-
-            while (x < columns && y < rows) {
-                setScore(diagonalLeftRightScore_player, x, y, moves[y]);
-                x++; y++;
-            }
+        for (int k=0; k<moves.length; k++) {
+            setScore(diagonalRightLeftScore_player, i, j, moves[k]);
+            i--; j++;
         }
 
         // Avversario
-        for (int i=0; i<rows; i++) {
-            moves = getScoresArray(getDiagonalLeftRightAt(0, i), OPPONENT_STATE);
-            int x = 0, y = i;
-            while (x < columns && y < rows) {
-                setScore(diagonalLeftRightScore_opponent, x, y, moves[x]);
-                x++; y++;
-            }
+        moves = getScoresArray(getDiagonalRightLeftAt(x, y), OPPONENT_STATE);
+        i = x; j = y;
+        while (i < columns-1 && j > 0) {
+            i++; j--;
         }
-        for (int i=1; i<columns; i++) {
-            moves = getScoresArray(getDiagonalLeftRightAt(i, 0), OPPONENT_STATE);
-            int x = i, y = 0;
-            while (x < columns && y < rows) {
-                setScore(diagonalLeftRightScore_opponent, x, y, moves[y]);
-                x++; y++;
-            }
+        for (int k=0; k<moves.length; k++) {
+            setScore(diagonalRightLeftScore_opponent, i, j, moves[k]);
+            i--; j++;
         }
     }
 
     private void fillDiagonalRightLeftScore() {
-        Score[] moves;
-
-        // Giocatore
         for (int i=0; i<rows; i++) {
-            moves = getScoresArray(getDiagonalRightLeftAt(0, i), PLAYER_STATE);
-            int x = 0, y = i;
-            while (x < columns && y >= 0) {
-                setScore(diagonalRightLeftScore_player, x, y, moves[x]);
-                x++; y--;
-            }
+            fillDiagonalRightLeftScoreAt(columns-1, i);
         }
-        for (int i=1; i<columns; i++) {
-            moves = getScoresArray(getDiagonalRightLeftAt(i, rows-1), PLAYER_STATE);
-            int x = i, y = rows-1, k=0;
-            while (x < columns && y >= 0) {
-                setScore(diagonalRightLeftScore_player, x, y, moves[k]);
-                x++; y--; k++;
-            }
-        }
-
-        // Avversario
-        for (int i=0; i<rows; i++) {
-            moves = getScoresArray(getDiagonalRightLeftAt(0, i), OPPONENT_STATE);
-            int x = 0, y = i;
-            while (x < columns && y >= 0) {
-                setScore(diagonalRightLeftScore_opponent, x, y, moves[x]);
-                x++; y--;
-            }
-        }
-        for (int i=1; i<columns; i++) {
-            moves = getScoresArray(getDiagonalRightLeftAt(i, rows-1), OPPONENT_STATE);
-            int x = i, y = rows-1, k=0;
-            while (x < columns && y >= 0) {
-                setScore(diagonalRightLeftScore_opponent, x, y, moves[k]);
-                x++; y--; k++;
-            }
+        for (int i=columns-2; i>=0; i--) {
+            fillDiagonalRightLeftScoreAt(i, 0);
         }
     }
 
@@ -334,6 +329,13 @@ public class BoardStatus {
         fillColumnsScore();
         fillDiagonalLeftRightScore();
         fillDiagonalRightLeftScore();
+    }
+
+    public void generateScoreAt(int x, int y) {
+        fillRowScoreAt(x, y);
+        fillColumnScoreAt(x, y);
+        fillDiagonalLeftRightScoreAt(x, y);
+        fillDiagonalRightLeftScoreAt(x, y);
     }
 
     public int getMovesToWinAt(int x, int y, MNKCellState toCheckStatus) {
