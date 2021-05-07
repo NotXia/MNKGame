@@ -1,4 +1,9 @@
 
+Controllare la direzione delle diagonali nell'euristica
+
+
+
+
 Sistemare bug nello score euristico (numero di allineati con un buco in mezzo)
 Test:
  5 5 4

@@ -20,6 +20,7 @@ public class GameTree {
     private final MNKGameState WIN_STATE, LOSS_STATE;
     private int maxScore, minScore;
     private int maxDepth;
+    private final int MAX_EVAL;
 
 
     public GameTree(int M, int N, int K, boolean first) {
@@ -37,7 +38,8 @@ public class GameTree {
         this.maxScore = M*N;
         this.minScore = -(M*N);
 
-        this.maxDepth = 4;
+        this.maxDepth = 5;
+        this.MAX_EVAL = 10;
     }
 
     public boolean isEmpty() {
@@ -48,14 +50,14 @@ public class GameTree {
         return (x >= 0 && x < columns) && (y >= 0 && y < rows);
     }
 
-    private int alphabeta(Node node, boolean mePlaying, int alpha, int beta) {
+    private int alphabeta(Node node, boolean myNode, int alpha, int beta) {
         if (node.isLeaf()) {
             return node.score;
         }
         else {
             int eval;
 
-            if (mePlaying) {
+            if (myNode) {
                 eval = maxScore+1;
                 for (Node child : node.children) {
                     eval = Math.min(eval, alphabeta(child, false, alpha, beta));
@@ -81,30 +83,15 @@ public class GameTree {
         }
     }
 
-    private boolean isProbablyAGoodIdea(BoardStatus board, int toVisit_x, int toVisit_y, int xAxisVariation, int yAxisVariation, MNKCellState toCheckState) {
-        int alignable = Math.max(
-            board.getHorizontallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE }),
-            Math.max(
-                board.getVerticallyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE }),
-                Math.max(
-                    board.getRightLeftObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE }),
-                    board.getLeftRightObliquelyAlignedAt(toVisit_x, toVisit_y, new MNKCellState[]{ toCheckState, MNKCellState.FREE })
-                )
-            )
-        );
-
-        return alignable >= target;
-    }
-
-    private Node createTree(Node toEval, boolean mePlaying, int depth, BoardStatus board, boolean heuristic) {
+    private Node createTree(Node toEval, boolean mePlaying, int depth, BoardStatus board) {
         MNKGameState gameState = board.statusAt(toEval.action.j, toEval.action.i);
 
         if (gameState != MNKGameState.OPEN) {
             if (gameState == WIN_STATE) {
-                toEval.score = 1;
+                toEval.score = target + 1;
             }
             else if (gameState == LOSS_STATE) {
-                toEval.score = -1;
+                toEval.score = -target -1;
             }
             else {
                 toEval.score = 0;
@@ -112,53 +99,86 @@ public class GameTree {
             toEval.isEndState = true;
         }
         else if (depth == maxDepth) {
-            int opponentScore = board.getScore(OPPONENT_STATE);
-            int playerScore = board.getScore(MY_STATE);
-            int score = playerScore - opponentScore;
+            board.generateScore();
 
-            if (score > 0) {
-                toEval.score = 1;
-            }
-            else if (score < 0) {
-                toEval.score = -1;
+            int playerScore, opponentScore;
+            playerScore = board.getGlobalBestMovesToWin(MY_STATE);
+            opponentScore = board.getGlobalBestMovesToWin(OPPONENT_STATE);
+
+            playerScore = target - playerScore;
+            opponentScore = target - opponentScore;
+
+            if (playerScore > opponentScore) {
+                toEval.score = playerScore;
             }
             else {
-                toEval.score = 0;
+                toEval.score = -opponentScore;
             }
         }
         else {
-            // Tiene traccia delle celle già elaborate
             HashMap<String, Boolean> hasBeenEvaluated = new HashMap<>();
+            board.generateScore();
+            PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>((move1, move2) -> move1.score - move2.score);
 
-            // Valuta tutte le celle adiacenti a quelle già marcate
             for (MNKCell markedCell : toEval.getMarkedCells()) {
-                for (int i=-1; i<=1; i++) {
-                    for (int j=-1; j<=1; j++) {
-                        if (i == 0 && j == 0) { continue; }
+                for (int i = -1; i <= 1; i++) {
+                    for (int j = -1; j <= 1; j++) {
+                        if (i == 0 && j == 0) {
+                            continue;
+                        }
 
-                        int toVisit_x = markedCell.j+j;
-                        int toVisit_y = markedCell.i+i;
+                        int toVisit_x = markedCell.j + j;
+                        int toVisit_y = markedCell.i + i;
 
                         if (isValidCell(toVisit_x, toVisit_y)) {
                             if (board.isFreeAt(toVisit_x, toVisit_y) && hasBeenEvaluated.get(""+toVisit_x+" "+toVisit_y) == null) {
-                                if (!heuristic || isProbablyAGoodIdea(board, toVisit_x, toVisit_y, j, i, MY_STATE) || isProbablyAGoodIdea(board, toVisit_x, toVisit_y, j, i, OPPONENT_STATE)) {
-                                    MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
-
-                                    MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
-                                    Node child = new Node(toEval, toEvalCell);
-
-                                    board.setAt(toVisit_x, toVisit_y, state);
-                                    toEval.children.add( createTree(child, !mePlaying, depth+1, board, heuristic) );
-                                    board.removeAt(toVisit_x, toVisit_y);
-
-                                    hasBeenEvaluated.put(""+toVisit_x+" "+toVisit_y, true);
-                                }
+                                moves.add(new EvaluationPosition(toVisit_x, toVisit_y, board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE)));
+                                moves.add(new EvaluationPosition(toVisit_x, toVisit_y, board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE)));
+                                hasBeenEvaluated.put(""+toVisit_x+" "+toVisit_y, true);
                             }
                         }
                     }
                 }
             }
-            alphabeta(toEval, !mePlaying, -1, 1);
+
+            int i=0;
+
+            while (i<MAX_EVAL && moves.size() != 0) {
+                int toVisit_x = moves.peek().x;
+                int toVisit_y = moves.peek().y;
+
+                MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
+
+                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
+                Node child = new Node(toEval, toEvalCell);
+
+                board.setAt(toVisit_x, toVisit_y, state);
+                toEval.children.add( createTree(child, !mePlaying, depth+1, board) );
+                board.removeAt(toVisit_x, toVisit_y);
+                i++;
+            }
+
+            /*board.generateScore();
+            PriorityQueue<EvaluationPosition> moves = board.getBestMovesQueue();
+
+            int i=0;
+
+            while (i<MAX_EVAL && moves.size() != 0) {
+                int toVisit_x = moves.peek().x;
+                int toVisit_y = moves.peek().y;
+
+                MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
+
+                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
+                Node child = new Node(toEval, toEvalCell);
+
+                board.setAt(toVisit_x, toVisit_y, state);
+                toEval.children.add( createTree(child, !mePlaying, depth+1, board) );
+                board.removeAt(toVisit_x, toVisit_y);
+                i++;
+            }*/
+
+            //alphabeta(toEval, !mePlaying, -target-1, target+1);
         }
 
         return toEval;
@@ -170,10 +190,11 @@ public class GameTree {
         BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);
         board.setAt(markedCell.j, markedCell.i, markedCell.state);
 
-        createTree(root, !first, 0, board, true);
+        createTree(root, !first, 0, board);
+        alphabeta(root, first, -target-1, target+1);
     }
 
-    public void generate(Node root, boolean heuristic) {
+    public void generate(Node root) {
         this.root = root;
 
         BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);
@@ -183,7 +204,8 @@ public class GameTree {
 
         boolean mePlaying = root.action.state == MY_STATE;
 
-        createTree(root, !mePlaying, 0, board, heuristic);
+        createTree(root, !mePlaying, 0, board);
+        alphabeta(root, mePlaying, -target-1, target+1);
     }
 
     public void setOpponentMove(MNKCell move) {
@@ -199,7 +221,7 @@ public class GameTree {
         if (bestChild == null) {
             Node new_root = new Node(root, move);
             root.children.add(new_root);
-            generate(new_root, true);
+            generate(new_root);
         }
         else {
             root = bestChild;
@@ -208,7 +230,7 @@ public class GameTree {
 
     public MNKCell nextMove() {
         if (root.children.size() == 0) { // Nessuna mossa prevista
-            generate(root, false);
+            generate(root);
         }
 
         root = root.children.poll();

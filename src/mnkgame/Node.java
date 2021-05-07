@@ -14,7 +14,7 @@ public class Node {
         this.parent = parent;
         this.children = new PriorityQueue<>((node1, node2) -> node2.score - node1.score);
         this.action = action;
-        score = 0;
+        this.score = 0;
         this.isEndState = false;
     }
 

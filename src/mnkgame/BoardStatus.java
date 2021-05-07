@@ -1,10 +1,35 @@
 package mnkgame;
 
+import java.util.LinkedList;
+import java.util.PriorityQueue;
+
 public class BoardStatus {
+    private class Score {
+        public int aligned, moves;
+
+        public Score(int aligned, int moves) {
+            this.aligned = aligned;
+            this.moves = moves;
+        }
+        public Score(Score toCopy) {
+            this.aligned = toCopy.aligned;
+            this.moves = toCopy.moves;
+        }
+
+        @Override
+        public String toString() {
+            return "(" + aligned + ", " + moves + ")";
+        }
+    }
+
     private MNKCellState[][] matrix;
     private int size;
     private int columns, rows, target;
     private final MNKCellState PLAYER_STATE, OPPONENT_STATE;
+
+    private Score[][] rowScore_player, columnScore_player, diagonalLeftRightScore_player, diagonalRightLeftScore_player;
+    private Score[][] rowScore_opponent, columnScore_opponent, diagonalLeftRightScore_opponent, diagonalRightLeftScore_opponent;
+
 
     public BoardStatus(int columns, int rows, int target, MNKCellState playerState) {
         matrix = new MNKCellState[columns][rows];
@@ -18,8 +43,18 @@ public class BoardStatus {
         this.columns = columns;
         this.rows = rows;
         this.target = target;
+
         this.PLAYER_STATE = playerState;
         this.OPPONENT_STATE = playerState == MNKCellState.P1 ? MNKCellState.P2 : MNKCellState.P1;
+
+        rowScore_player = new Score[columns][rows];
+        columnScore_player = new Score[columns][rows];
+        diagonalLeftRightScore_player = new Score[columns][rows];
+        diagonalRightLeftScore_player = new Score[columns][rows];
+        rowScore_opponent = new Score[columns][rows];
+        columnScore_opponent = new Score[columns][rows];
+        diagonalLeftRightScore_opponent = new Score[columns][rows];
+        diagonalRightLeftScore_opponent = new Score[columns][rows];
     };
 
     public void setAt(int x, int y, MNKCellState state) {
@@ -48,42 +83,30 @@ public class BoardStatus {
         return matrix[x][y] == MNKCellState.FREE;
     }
 
-    private int getMovesToWin(MNKCellState board[], MNKCellState toCheckState) {
+    private Score[] getScoresArray(MNKCellState board[], MNKCellState toCheckState) {
         MNKCellState oppositeState = toCheckState == MNKCellState.P1 ? MNKCellState.P2 : MNKCellState.P1;
-        int best = target+1;
-        int[][] s = new int[board.length][2];
-        /*
-        * s[i][0] = Allineabili all'i-esima cella
-        * s[i][1] = Azioni necessarie
-        * */
-
+        Score[] s = new Score[board.length];
 
         if (board[0] == toCheckState) {
-            s[0][0] = 1;
-            s[0][1] = 0;
+            s[0] = new Score(1, 0);
         }
         else if (board[0] == oppositeState) {
-            s[0][0] = 0;
-            s[0][1] = 0;
+            s[0] = new Score(0, 0);
         }
         else { // status[0] == FREE
-            s[0][0] = 1;
-            s[0][1] = 1;
+            s[0] = new Score(1, 1);
         }
 
         for (int i=1; i<board.length; i++) {
             if (board[i] == oppositeState) {
-                s[i][0] = 0;
-                s[i][1] = 0;
+                s[i] = new Score(0, 0);
             }
-            else if (s[i-1][0] < target) {
+            else if (s[i-1].aligned < target) {
                 if (board[i] == toCheckState) {
-                    s[i][0] = s[i-1][0] + 1;
-                    s[i][1] = s[i-1][1];
+                    s[i] = new Score(s[i-1].aligned + 1, s[i-1].moves);
                 }
                 else { // board[i] == FREE
-                    s[i][0] = s[i-1][0] + 1;
-                    s[i][1] = s[i-1][1] + 1;
+                    s[i] = new Score(s[i-1].aligned + 1, s[i-1].moves + 1);
                 }
             }
             else {
@@ -93,130 +116,285 @@ public class BoardStatus {
                 }
 
                 if (board[i] == toCheckState) {
-                    s[i][0] = s[i-1][0];
-                    s[i][1] = s[i-1][1] - toIgnoreMoveCost;
+                    s[i] = new Score(s[i-1].aligned, s[i-1].moves - toIgnoreMoveCost);
                 }
                 else { // board[i] == FREE
-                    s[i][0] = s[i-1][0];
-                    s[i][1] = s[i-1][1] + 1 - toIgnoreMoveCost;
+                    s[i] = new Score(s[i-1].aligned, s[i-1].moves + 1 - toIgnoreMoveCost);
                 }
             }
+        }
 
-            if (s[i][0] == target && s[i][1] < best) {
-                best = s[i][1];
+        // Propagazione
+        for (int i=0; i<s.length; i++) {
+            if (s[i].aligned == target) {
+                for (int j=1; j<=target-1; j++) {
+                    if ( (s[i-j].aligned == 0 && s[i-j].moves == 0) || (s[i-j].aligned == target && s[i-j].moves < s[i].moves) ) {
+                        continue;
+                    }
+                    s[i-j].aligned = s[i].aligned;
+                    s[i-j].moves = s[i].moves;
+                }
+            }
+        }
+
+        return s;
+    }
+
+    private MNKCellState[] getRowAt(int start_x, int start_y) {
+        MNKCellState[] row = new MNKCellState[columns];
+        for (int x=0; x<columns; x++) {
+            row[x] = matrix[x][start_y];
+        }
+        return row;
+    }
+
+    private MNKCellState[] getColumnAt(int start_x, int start_y) {
+        MNKCellState[] column = new MNKCellState[rows];
+        for (int y=0; y<rows; y++) {
+            column[y] = matrix[start_x][y];
+        }
+        return column;
+    }
+
+    private MNKCellState[] getDiagonalLeftRightAt(int start_x, int start_y) {
+        LinkedList<MNKCellState> buffer = new LinkedList<>();
+
+        int i = start_x, j = start_y;
+        while (i < columns && j < rows) {
+            buffer.addLast(matrix[i][j]);
+            i++; j++;
+        }
+
+        i = start_x-1;
+        j = start_y-1;
+        while (i >= 0 && j >= 0) {
+            buffer.addFirst(matrix[i][j]);
+            i--; j--;
+        }
+
+        return buffer.toArray(new MNKCellState[buffer.size()]);
+    }
+
+    private MNKCellState[] getDiagonalRightLeftAt(int start_x, int start_y) {
+        LinkedList<MNKCellState> buffer = new LinkedList<>();
+
+        int i = start_x, j = start_y;
+        while (i < columns && j >= 0) {
+            buffer.addLast(matrix[i][j]);
+            i++; j--;
+        }
+
+        i = start_x-1;
+        j = start_y+1;
+        while (i >= 0 && j < rows) {
+            buffer.addFirst(matrix[i][j]);
+            i--; j++;
+        }
+
+        return buffer.toArray(new MNKCellState[buffer.size()]);
+    }
+
+    private void setScore(Score[][] score, int x, int y, Score value) {
+        if (value.aligned == 0 && value.moves == 0) {
+            score[x][y] = new Score(0, target*10);
+        }
+        else if(value.aligned != target) {
+            score[x][y] = new Score(0, target + value.moves);
+        }
+        else {
+            score[x][y] = new Score(value);
+        }
+    }
+
+
+    private void fillRowsScore() {
+        Score[] moves;
+
+        // Giocatore
+        for (int i=0; i<rows; i++) {
+            moves = getScoresArray(getRowAt(0, i), PLAYER_STATE);
+
+            for (int j=0; j<columns; j++) {
+                setScore(rowScore_player, j, i, moves[j]);
+            }
+        }
+
+        // Avversario
+        for (int i=0; i<rows; i++) {
+            moves = getScoresArray(getRowAt(0, i), OPPONENT_STATE);
+            for (int j=0; j<columns; j++) {
+                setScore(rowScore_opponent, j, i, moves[j]);
+            }
+        }
+    }
+
+    private void fillColumnsScore() {
+        Score[] moves;
+
+        // Giocatore
+        for (int i=0; i<columns; i++) {
+            moves = getScoresArray(getColumnAt(i, 0), PLAYER_STATE);
+            for (int j=0; j<rows; j++) {
+                setScore(columnScore_player, i, j, moves[j]);
+            }
+        }
+
+        // Avversario
+        for (int i=0; i<columns; i++) {
+            moves = getScoresArray(getColumnAt(i, 0), OPPONENT_STATE);
+            for (int j=0; j<rows; j++) {
+                setScore(columnScore_opponent, i, j, moves[j]);
+            }
+        }
+    }
+
+    private void fillDiagonalLeftRightScore() {
+        Score[] moves;
+
+        // Giocatore
+        for (int i=0; i<rows; i++) {
+            moves = getScoresArray(getDiagonalLeftRightAt(0, i), PLAYER_STATE);
+            int x = 0, y = i;
+            while (x < columns && y < rows) {
+                setScore(diagonalLeftRightScore_player, x, y, moves[x]);
+                x++; y++;
+            }
+        }
+        for (int i=1; i<columns; i++) {
+            moves = getScoresArray(getDiagonalLeftRightAt(i, 0), PLAYER_STATE);
+            int x = i, y = 0;
+
+            while (x < columns && y < rows) {
+                setScore(diagonalLeftRightScore_player, x, y, moves[y]);
+                x++; y++;
+            }
+        }
+
+        // Avversario
+        for (int i=0; i<rows; i++) {
+            moves = getScoresArray(getDiagonalLeftRightAt(0, i), OPPONENT_STATE);
+            int x = 0, y = i;
+            while (x < columns && y < rows) {
+                setScore(diagonalLeftRightScore_opponent, x, y, moves[x]);
+                x++; y++;
+            }
+        }
+        for (int i=1; i<columns; i++) {
+            moves = getScoresArray(getDiagonalLeftRightAt(i, 0), OPPONENT_STATE);
+            int x = i, y = 0;
+            while (x < columns && y < rows) {
+                setScore(diagonalLeftRightScore_opponent, x, y, moves[y]);
+                x++; y++;
+            }
+        }
+    }
+
+    private void fillDiagonalRightLeftScore() {
+        Score[] moves;
+
+        // Giocatore
+        for (int i=0; i<rows; i++) {
+            moves = getScoresArray(getDiagonalRightLeftAt(0, i), PLAYER_STATE);
+            int x = 0, y = i;
+            while (x < columns && y >= 0) {
+                setScore(diagonalRightLeftScore_player, x, y, moves[x]);
+                x++; y--;
+            }
+        }
+        for (int i=1; i<columns; i++) {
+            moves = getScoresArray(getDiagonalRightLeftAt(i, rows-1), PLAYER_STATE);
+            int x = i, y = rows-1, k=0;
+            while (x < columns && y >= 0) {
+                setScore(diagonalRightLeftScore_player, x, y, moves[k]);
+                x++; y--; k++;
+            }
+        }
+
+        // Avversario
+        for (int i=0; i<rows; i++) {
+            moves = getScoresArray(getDiagonalRightLeftAt(0, i), OPPONENT_STATE);
+            int x = 0, y = i;
+            while (x < columns && y >= 0) {
+                setScore(diagonalRightLeftScore_opponent, x, y, moves[x]);
+                x++; y--;
+            }
+        }
+        for (int i=1; i<columns; i++) {
+            moves = getScoresArray(getDiagonalRightLeftAt(i, rows-1), OPPONENT_STATE);
+            int x = i, y = rows-1, k=0;
+            while (x < columns && y >= 0) {
+                setScore(diagonalRightLeftScore_opponent, x, y, moves[k]);
+                x++; y--; k++;
+            }
+        }
+    }
+
+    public void generateScore() {
+        fillRowsScore();
+        fillColumnsScore();
+        fillDiagonalLeftRightScore();
+        fillDiagonalRightLeftScore();
+    }
+
+    public int getMovesToWinAt(int x, int y, MNKCellState toCheckStatus) {
+        if (toCheckStatus == PLAYER_STATE) {
+            return Math.min(
+                columnScore_player[x][y].moves,
+                Math.min(
+                    rowScore_player[x][y].moves,
+                    Math.min(
+                        diagonalLeftRightScore_player[x][y].moves,
+                        diagonalRightLeftScore_player[x][y].moves
+                    )
+                )
+            );
+        }
+        else {
+            return Math.min(
+                columnScore_opponent[x][y].moves,
+                Math.min(
+                    rowScore_opponent[x][y].moves,
+                    Math.min(
+                        diagonalLeftRightScore_opponent[x][y].moves,
+                        diagonalRightLeftScore_opponent[x][y].moves
+                    )
+                )
+            );
+        }
+    }
+
+    public int getGlobalBestMovesToWin(MNKCellState toCheckStatus) {
+        int best = target*10;
+
+        for (int i=0; i<rows; i++) {
+            for (int j=0; j<columns; j++) {
+                int s = getMovesToWinAt(j, i, toCheckStatus);
+                if (s < best) best = s;
             }
         }
 
         return best;
     }
 
-    public int getScore(MNKCellState toCheckState) {
-        int best = target+1;
+    public PriorityQueue<EvaluationPosition> getBestMovesQueue() {
+        PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>((move1, move2) -> move1.score - move2.score);
 
-        // Righe
         for (int y=0; y<rows; y++) {
-            MNKCellState[] row = new MNKCellState[columns];
             for (int x=0; x<columns; x++) {
-                row[x] = matrix[x][y];
-            }
-            int movesToWin = getMovesToWin(row, toCheckState);
-            if (movesToWin < best) {
-                best = movesToWin;
-                if (best <= 1) { return 1; };
-            }
-        }
-
-        // Colonne
-        for (int x=0; x<columns; x++) {
-            MNKCellState[] column = new MNKCellState[rows];
-            for (int y=0; y<rows; y++) {
-                column[y] = matrix[x][y];
-            }
-
-            int movesToWin = getMovesToWin(column, toCheckState);
-            if (movesToWin < best) {
-                best = movesToWin;
-                if (best <= 1) { return 1; };
+                if (matrix[x][y] == MNKCellState.FREE) {
+                    moves.add(new EvaluationPosition(x, y, columnScore_player[x][y].moves));
+                    moves.add(new EvaluationPosition(x, y, rowScore_player[x][y].moves));
+                    moves.add(new EvaluationPosition(x, y, diagonalLeftRightScore_player[x][y].moves));
+                    moves.add(new EvaluationPosition(x, y, diagonalRightLeftScore_player[x][y].moves));
+                    moves.add(new EvaluationPosition(x, y, columnScore_opponent[x][y].moves));
+                    moves.add(new EvaluationPosition(x, y, rowScore_opponent[x][y].moves));
+                    moves.add(new EvaluationPosition(x, y, diagonalLeftRightScore_opponent[x][y].moves));
+                    moves.add(new EvaluationPosition(x, y, diagonalRightLeftScore_opponent[x][y].moves));
+                }
             }
         }
 
-        // Obliquo alto sx - basso dx
-        int maxDiagonalLength = Math.min(columns, rows);
-
-        int currDiagonalLength = 1;
-        for (int x=columns-1; x>=0; x--) {
-            MNKCellState[] diagonal = new MNKCellState[currDiagonalLength];
-            for (int i=0; i<currDiagonalLength; i++) {
-                diagonal[i] = matrix[x+i][i];
-            }
-
-            int movesToWin = getMovesToWin(diagonal, toCheckState);
-            if (movesToWin < best) {
-                best = movesToWin;
-                if (best <= 1) { return 1; };
-            }
-
-            if (currDiagonalLength < maxDiagonalLength) {
-                currDiagonalLength++;
-            }
-        }
-
-        currDiagonalLength = 1;
-        for (int y=rows-1; y>=1; y--) {
-            MNKCellState[] diagonal = new MNKCellState[currDiagonalLength];
-            for (int i=0; i<currDiagonalLength; i++) {
-                diagonal[i] = matrix[i][y+i];
-            }
-
-            int movesToWin = getMovesToWin(diagonal, toCheckState);
-            if (movesToWin < best) {
-                best = movesToWin;
-                if (best <= 1) { return 1; };
-            }
-
-            if (currDiagonalLength < maxDiagonalLength) {
-                currDiagonalLength++;
-            }
-        }
-
-        // Obliquo alto dx - basso sx
-        currDiagonalLength = 1;
-        for (int x=0; x<columns; x++) {
-            MNKCellState[] diagonal = new MNKCellState[currDiagonalLength];
-            for (int i=0; i<currDiagonalLength; i++) {
-                diagonal[i] = matrix[x-i][i];
-            }
-
-            int movesToWin = getMovesToWin(diagonal, toCheckState);
-            if (movesToWin < best) {
-                best = movesToWin;
-                if (best <= 1) { return 1; };
-            }
-
-            if (currDiagonalLength < maxDiagonalLength) {
-                currDiagonalLength++;
-            }
-        }
-
-        currDiagonalLength = 1;
-        for (int y=rows-1; y>=1; y--) {
-            MNKCellState[] diagonal = new MNKCellState[currDiagonalLength];
-            for (int i=0; i<currDiagonalLength; i++) {
-                diagonal[i] = matrix[columns-1-i][y+i];
-            }
-
-            int movesToWin = getMovesToWin(diagonal, toCheckState);
-            if (movesToWin < best) {
-                best = movesToWin;
-                if (best <= 1) { return 1; };
-            }
-
-            if (currDiagonalLength < maxDiagonalLength) {
-                currDiagonalLength++;
-            }
-        }
-
-        return best;
+        return moves;
     }
 
     public int getMaxAlignable(MNKCellState toCheckState) {
