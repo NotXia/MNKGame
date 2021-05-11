@@ -8,4 +8,13 @@ public class EvaluationPosition {
         this.y = y;
         this.score = score;
     }
+
+    @Override
+    public String toString() {
+        return "{" +
+                "(" + x +
+                ", " + y +
+                ") " + score +
+                '}';
+    }
 }

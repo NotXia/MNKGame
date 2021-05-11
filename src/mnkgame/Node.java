@@ -1,23 +1,26 @@
 package mnkgame;
 
-import java.util.PriorityQueue;
 import java.util.LinkedList;
 
 public class Node {
     public Node parent;
-    public PriorityQueue<Node> children;
+    public LinkedList<Node> children;
     public MNKCell action;
     public int score;
-    public boolean isEndState;
+    public boolean alphabeta;
 
     public Node(Node parent, MNKCell action) {
         this.parent = parent;
-        this.children = new PriorityQueue<>((node1, node2) -> node2.score - node1.score);
+        this.children = new LinkedList<>();
         this.action = action;
         this.score = 0;
-        this.isEndState = false;
+        this.alphabeta = false;
     }
 
+    /**
+     * Restituisce una lista contenente tutte le celle marcate fino alla mossa attuale
+     * @implNote Costo: O(h)    h = altezza dell'albero
+     * */
     public LinkedList<MNKCell> getMarkedCells() {
         LinkedList<MNKCell> markedCells = new LinkedList<>();
         Node iter = this.parent;
@@ -31,11 +34,20 @@ public class Node {
         return markedCells;
     }
 
+    /**
+     * Svuota la lista di figli e imposta come figlio il nodo in input
+     * @implNote Costo: O(1)
+     * */
     public void setSelectedChild(Node child) {
-        this.children = new PriorityQueue<>((node1, node2) -> node2.score - node1.score);
+        // Idea ottimizzazione: Array di LinkedList (in base al target). [i] contiene una lista con tutte le mosse di quel determinato punteggio
+        this.children = new LinkedList<>();
         this.children.add(child);
     }
 
+    /**
+     * Indica se il nodo è una foglia
+     * @implNote Costo: O(1)
+     * */
     public boolean isLeaf() {
         return children.size() == 0;
     }

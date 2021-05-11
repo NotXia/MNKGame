@@ -3,7 +3,7 @@ package mnkgame;
 public class OurPlayer implements MNKPlayer {
     private int rows, columns, target;
     private boolean first;
-    public GameTree decisionTree; /** <--------------------- DA RIMETTERE PRIVATE **/
+    private GameTree decisionTree;
 
     public OurPlayer() {
     }
@@ -53,17 +53,4 @@ public class OurPlayer implements MNKPlayer {
     public String playerName() {
         return "xIA";
     }
-
-    public static void main(String[] args) {
-        OurPlayer p = new OurPlayer();
-
-        p.initPlayer(3, 3, 3, true, 10);
-
-        p.selectCell(new MNKCell[1], new MNKCell[1]);
-
-
-        System.out.println("Creato");
-        p.decisionTree.print();
-    }
-
  }
