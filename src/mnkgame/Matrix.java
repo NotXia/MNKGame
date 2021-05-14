@@ -122,11 +122,11 @@ public class Matrix {
         for (int y=0; y<rows-1; y++) {
             for (int x=0; x<columns; x++) {
                 out += (matrix[x][y] == MNKCellState.FREE ?
-                        "-"
+                            "-"
                         :
-                        matrix[x][y] == playerState ?
+                            matrix[x][y] == playerState ?
                                 "Me"
-                                :
+                            :
                                 "Op")
                         + "\t";
             }
@@ -134,11 +134,11 @@ public class Matrix {
         }
         for (int x=0; x<columns; x++) {
             out += (matrix[x][rows-1] == MNKCellState.FREE ?
-                    "-"
+                        "-"
                     :
-                    matrix[x][rows-1] == playerState ?
+                        matrix[x][rows-1] == playerState ?
                             "Me"
-                            :
+                        :
                             "Op")
                     + "\t";
         }

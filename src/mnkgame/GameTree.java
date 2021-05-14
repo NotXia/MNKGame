@@ -18,6 +18,7 @@ public class GameTree {
     private int maxScore, minScore;
     private int MAX_DEPTH;
     private final int MAX_EVAL;
+    private final int WIN_SCORE, LOSS_SCORE, DRAW_SCORE;
 
     public GameTree(int M, int N, int K, boolean first) {
         this.root = null;
@@ -36,6 +37,10 @@ public class GameTree {
 
         this.MAX_DEPTH = 6;
         this.MAX_EVAL = 5;
+
+        this.WIN_SCORE = target + 1;
+        this.LOSS_SCORE = -target - 1;
+        this.DRAW_SCORE = 0;
     }
 
     public boolean isEmpty() {
@@ -87,18 +92,17 @@ public class GameTree {
      * */
     private void setScoreOf(Node node, MNKGameState gameState) {
         if (gameState == WIN_STATE) {
-            node.score = target + 1;
+            node.score = WIN_SCORE;
         }
         else if (gameState == LOSS_STATE) {
-            node.score = -target -1;
+            node.score = LOSS_SCORE;
         }
         else {
-            node.score = 0;
+            node.score = DRAW_SCORE;
         }
     }
 
     private void setHeuristicScoreOf(Node node, BoardStatus board) {
-        // Idea ottimizzazione: Scorrere l'array MC e valutare solo quei punteggi
         int playerScore, opponentScore;
 
         /*board.generateScore();
@@ -128,7 +132,7 @@ public class GameTree {
      * */
     public PriorityQueue<EvaluationPosition> getInterestingPositions(Node node, BoardStatus board) {
         HashMap<String, Boolean> hasBeenEvaluated = new HashMap<>();
-        PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>((move1, move2) -> move1.score - move2.score);
+        PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>();
 
         for (MNKCell markedCell : node.getMarkedCells()) {
             for (int i = -1; i <= 1; i++) {
@@ -140,11 +144,6 @@ public class GameTree {
                     if (isValidCell(toVisit_x, toVisit_y)) {
                         if (board.isFreeAt(toVisit_x, toVisit_y) && hasBeenEvaluated.get(""+toVisit_x+" "+toVisit_y) == null) {
                             board.generateScoreAt(toVisit_x, toVisit_y);
-
-/*                            System.out.println(board);
-                            System.out.println("(" + toVisit_x + " " + toVisit_y + ") " + board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE) + " " + board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE));
-                            System.out.println();*/
-
                             moves.add( new EvaluationPosition(toVisit_x, toVisit_y, board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE)) );
                             moves.add( new EvaluationPosition(toVisit_x, toVisit_y, board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE)) );
                             hasBeenEvaluated.put(""+toVisit_x+" "+toVisit_y, true);
@@ -169,6 +168,7 @@ public class GameTree {
 
         if (gameState != MNKGameState.OPEN) {
             setScoreOf(toEval, gameState);
+            toEval.endState = true;
         }
         else if (depth == 0) {
             setHeuristicScoreOf(toEval, board);
@@ -210,7 +210,7 @@ public class GameTree {
         board.setAt(firstMove.j, firstMove.i, firstMove.state);
 
         createTree(root, !first, MAX_DEPTH, board);
-        alphabeta(root, first, -target-1, target+1);
+        alphabeta(root, first, LOSS_SCORE, WIN_SCORE);
     }
 
     /**
@@ -229,20 +229,17 @@ public class GameTree {
     }
 
     /**
-     * Estende di un livello di profondità tutte le foglie (non tagliate dal Alpha Beta) dell'albero radicato nel nodo indicato
+     * Estende di un livello di profondità tutte le foglie dell'albero radicato nel nodo indicato
      * @param node Nodo di partenza
      * @implNote Costo:
      * */
-    private void extendLeaf(Node node) {
-        if (node.isLeaf()) {
+    private void extendLeafs(Node node) {
+        if (node.isLeaf() && !node.endState) {
             extendNode(node, 1);
-            /*if (node.alphabeta) {
-                extendNode(node, 1);
-            }*/
         }
         else {
             for (Node child : node.children) {
-                extendLeaf(child);
+                extendLeafs(child);
             }
         }
     }
@@ -264,16 +261,16 @@ public class GameTree {
 
         if (bestChild == null) {
             Node new_root = new Node(this.root, move);
-            this.root.children.add(new_root);
+            root.setSelectedChild(new_root);
             this.root = new_root;
             extendNode(this.root, MAX_DEPTH);
-            alphabeta(this.root, false, -target-1, target+1);
+            alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
         }
         else {
             root.setSelectedChild(bestChild);
             root = bestChild;
-            extendLeaf(root);
-            alphabeta(this.root, this.root.action.state==MY_STATE, -target-1, target+1);
+            extendLeafs(root);
+            alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
         }
 
     }
@@ -284,27 +281,14 @@ public class GameTree {
      * @implNote Costo:
      * */
     public MNKCell nextMove() {
-        if (root.children.size() == 0) { // Nessuna mossa prevista
-            extendNode(root, MAX_DEPTH);
-            alphabeta(this.root, this.root.action.state==MY_STATE, -target-1, target+1);
-        }
-
         Node nextChild = root.children.peek(); /*** TODO RIMETTERE POLL **/
 
         for (Node child : root.children) {
-
-            /*BoardStatus bs = new BoardStatus(columns, rows, target, MY_STATE);
-            for (MNKCell cell : child.getMarkedCells()) {
-                bs.setAt(cell.j, cell.i, cell.state);
-            }
-            System.out.println(bs);
-            System.out.println("----");*/
             //System.out.println(child.action + " " + child.score + " " + child.alphabeta);
             if (child.score > nextChild.score && child.alphabeta) {
                 nextChild = child;
             }
         }
-
         //System.out.println();
 
         root.setSelectedChild(nextChild);
@@ -322,8 +306,8 @@ public class GameTree {
             }
         }
 
-        extendLeaf(root);
-        alphabeta(this.root, this.root.action.state==MY_STATE, -target-1, target+1);
+        extendLeafs(root);
+        alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
         return root.action;
     }
 }

@@ -7,7 +7,7 @@ public class Node {
     public LinkedList<Node> children;
     public MNKCell action;
     public int score;
-    public boolean alphabeta;
+    public boolean alphabeta, endState;
 
     public Node(Node parent, MNKCell action) {
         this.parent = parent;
@@ -15,6 +15,7 @@ public class Node {
         this.action = action;
         this.score = 0;
         this.alphabeta = false;
+        this.endState = false;
     }
 
     /**
@@ -39,7 +40,6 @@ public class Node {
      * @implNote Costo: O(1)
      * */
     public void setSelectedChild(Node child) {
-        // Idea ottimizzazione: Array di LinkedList (in base al target). [i] contiene una lista con tutte le mosse di quel determinato punteggio
         this.children = new LinkedList<>();
         this.children.add(child);
     }

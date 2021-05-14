@@ -1,7 +1,5 @@
 package mnkgame;
 
-import java.util.LinkedList;
-
 public class BoardStatus {
     private class Score {
         public int aligned, moves;
@@ -124,6 +122,14 @@ public class BoardStatus {
      * @implNote Costo: (max{M, N} * K)
      * */
     private Score[] getScoresArray(MNKCellState board[], MNKCellState toCheckState) {
+        if (board.length < target) {
+            Score[] s = new Score[board.length];
+            for (int i=0; i<board.length; i++) {
+                s[i] = new Score(0, 0);
+            }
+            return s;
+        }
+
         MNKCellState oppositeState = toCheckState == MNKCellState.P1 ? MNKCellState.P2 : MNKCellState.P1;
         Score[] s = new Score[board.length];
 
@@ -424,113 +430,24 @@ public class BoardStatus {
     }
 
     /**
-     * @implNote Costo:
-     * */
-    private boolean contains(Object[] toCheck, Object toFind) {
-        for (int i=0; i<toCheck.length; i++) {
-            if (toCheck[i].equals(toFind)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Restituisce, a partire da una cella, il numero di celle allineate verticalmente che hanno come stato uno di quelli contenuto in toCheck.
-     * @implNote Costo:
-     * */
-    public int getVerticallyAlignedAt(int x, int y, MNKCellState[] toCheck) {
-        if (!contains(toCheck, matrix.getAt(x, y))) { return 0; }
-
-        int aligned = 1;
-        for (int i=1; i<=target && x-i>=0; i++) { // Sx
-            if (contains(toCheck, matrix.getAt(x-i, y))) { aligned++; }
-            else { break; }
-        }
-        for (int i=1; i<=target && x+i<columns; i++) { // Dx
-            if (contains(toCheck, matrix.getAt(x+i, y))) { aligned++; }
-            else { break; }
-        }
-        return aligned;
-    }
-
-    /**
-     * Restituisce, a partire da una cella, il numero di celle allineate orizzontalmente che hanno come stato uno di quelli contenuto in toCheck.
-     * @implNote Costo:
-     * */
-    public int getHorizontallyAlignedAt(int x, int y, MNKCellState[] toCheck) {
-        if (!contains(toCheck, matrix.getAt(x, y))) { return 0; }
-
-        int aligned = 1;
-        for (int i=1; i<=target && y-i>=0; i++) { // Alto
-            if (contains(toCheck, matrix.getAt(x, y-i))) { aligned++; }
-            else { break; }
-        }
-        for (int i=1; i<=target && y+i<rows; i++) { // Basso
-            if (contains(toCheck, matrix.getAt(x, y+i))) { aligned++; }
-            else { break; }
-        }
-        return aligned;
-    }
-
-    /**
-     * Restituisce, a partire da una cella, il numero di celle allineate obliquamente (alto sx verso basso dx) che hanno come stato uno di quelli contenuto in toCheck.
-     * @implNote Costo:
-     * */
-    public int getLeftRightObliquelyAlignedAt(int x, int y, MNKCellState[] toCheck) {
-        if (!contains(toCheck, matrix.getAt(x, y))) { return 0; }
-
-        int aligned = 1;
-        for (int i=1; i<=target && x-i>=0 && y-i>=0; i++) { // Alto sx
-            if (contains(toCheck, matrix.getAt(x-i, y-i))) { aligned++; }
-            else { break; }
-        }
-        for (int i=1; i<=target && x+i<columns && y+i<rows; i++) { // Basso dx
-            if (contains(toCheck, matrix.getAt(x+i, y+i))) { aligned++; }
-            else { break; }
-        }
-        return aligned;
-    }
-
-    /**
-     * Restituisce, a partire da una cella, il numero di celle allineate obliquamente (alto dx verso basso sx) che hanno come stato uno di quelli contenuto in toCheck.
-     * @implNote Costo:
-     * */
-    public int getRightLeftObliquelyAlignedAt(int x, int y, MNKCellState[] toCheck) {
-        if (!contains(toCheck, matrix.getAt(x, y))) { return 0; }
-
-        int aligned = 1;
-        for (int i=1; i<=target && x+i<columns && y-i>=0; i++) { // Alto dx
-            if (contains(toCheck, matrix.getAt(x+i, y-i))) { aligned++; }
-            else { break; }
-        }
-        for (int i=1; i<=target && x-i>=0 && y+i<rows; i++) { // Basso sx
-            if (contains(toCheck, matrix.getAt(x-i, y+i))) { aligned++; }
-            else { break; }
-        }
-        return aligned;
-    }
-
-    /**
      * Restituisce lo stato della griglia controllando da una determinata posizione (vittoria, sconfitta, pareggio, partita aperta)
      * @implNote Costo:
      * */
     public MNKGameState statusAt(int x, int y) {
-        MNKCellState toCheckState = matrix.getAt(x, y);
-        if (toCheckState == MNKCellState.FREE) { return MNKGameState.OPEN; };
+        if (matrix.getAt(x, y) == MNKCellState.FREE) { return MNKGameState.OPEN; }
 
         final MNKGameState WIN_STATE = PLAYER_STATE == MNKCellState.P1 ? MNKGameState.WINP1 : MNKGameState.WINP2;
         final MNKGameState LOSS_STATE = PLAYER_STATE == MNKCellState.P1 ? MNKGameState.WINP2 : MNKGameState.WINP1;
-        MNKGameState result = toCheckState == PLAYER_STATE ? WIN_STATE : LOSS_STATE;
 
-        if (getVerticallyAlignedAt(x, y, new MNKCellState[]{toCheckState}) >= target) { return result; }
-        if (getHorizontallyAlignedAt(x, y, new MNKCellState[]{toCheckState}) >= target) { return result; }
-        if (getLeftRightObliquelyAlignedAt(x, y, new MNKCellState[]{toCheckState}) >= target) { return result; }
-        if (getRightLeftObliquelyAlignedAt(x, y, new MNKCellState[]{toCheckState}) >= target) { return result; }
-
-
-        if (matrix.size() == columns*rows) {
+        generateScoreAt(x, y);
+        if (matrix.size() == columns * rows) {
             return MNKGameState.DRAW;
+        }
+        else if (getMovesToWinAt(x, y, PLAYER_STATE) == 0) {
+            return WIN_STATE;
+        }
+        else if (getMovesToWinAt(x, y, OPPONENT_STATE) == 0) {
+            return LOSS_STATE;
         }
         else {
             return MNKGameState.OPEN;

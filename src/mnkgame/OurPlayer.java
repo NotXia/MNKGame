@@ -38,12 +38,12 @@ public class OurPlayer implements MNKPlayer {
             outCell = this.decisionTree.nextMove();
         }
 
-        if (false) {
+        if (true) {
             end_t = System.currentTimeMillis();
             elapsed = (end_t - start_t);
             min = elapsed / (60*1000);
             sec = (elapsed - min*60*1000)/1000.0;
-            System.out.println("Tempo impiegato: " + min + " min " + sec + " sec");
+            System.out.println("Tempo impiegato: " + sec + " sec");
             System.out.println();
         }
 
