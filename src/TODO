@@ -1,5 +1,9 @@
 Vedere se si può rendere lo score più accurato (vedi Onenote)
 
+Invece di valutare tutte le celle adiacenti per scegliere la prossima mossa, basarsi solo su alcuni.
+    Idee:
+    - Le ultime N mosse
+    - Le celle nella stessa direzione di una serie da allineare
 
 
 Sistemare bug nello score euristico (numero di allineati con un buco in mezzo)

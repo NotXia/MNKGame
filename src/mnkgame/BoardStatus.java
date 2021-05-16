@@ -168,17 +168,12 @@ public class BoardStatus {
                     s[i] = new Score(s[i-1].aligned, s[i-1].moves + 1 - toIgnoreMoveCost);
                 }
             }
-        }
 
-        // Propagazione
-        for (int i=0; i<s.length; i++) {
+            // Progapazione
             if (s[i].aligned == target) {
-                for (int j=1; j<=target-1; j++) {
-                    if ( (s[i-j].aligned == 0 && s[i-j].moves == 0) || (s[i-j].aligned == target && s[i-j].moves < s[i].moves) ) {
-                        continue;
-                    }
-                    s[i-j].aligned = s[i].aligned;
-                    s[i-j].moves = s[i].moves;
+                for (int k=1; k<=target-1 && i-k>=0; k++) {
+                    if ( (s[i-k].aligned==0 && s[i-k].moves==0) || (s[i-k].aligned == target &&  s[i-k].moves < s[i].moves) ) { break; }
+                    s[i-k] = s[i];
                 }
             }
         }
@@ -469,9 +464,9 @@ public class BoardStatus {
         System.out.println(bs.getMovesToWinAt(3, 0, MNKCellState.P1));
         System.out.println(bs.getMovesToWinAt(3, 0, MNKCellState.P2));
 
-        bs.generateScore();
+        /*bs.generateScore();
         System.out.println(bs.getGlobalBestMovesToWin(MNKCellState.P1));
-        System.out.println(bs.getGlobalBestMovesToWin(MNKCellState.P2));
+        System.out.println(bs.getGlobalBestMovesToWin(MNKCellState.P2));*/
 
     }
 }
