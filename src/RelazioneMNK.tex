@@ -2,6 +2,7 @@
 \usepackage{algorithmic}
 \usepackage[italian]{babel}
 \usepackage[document]{ragged2e}
+\usepackage{amsfonts, amssymb, amsmath}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -63,9 +64,42 @@ Contemporaneamente, l'algoritmo deve avere la capacità di effettuare scelte qua
 
 \section{Scelte progettuali}
 \subsection{Interfaccia \texttt{MNKPlayer}}
+La funzione \texttt{selectCell} dell'interfaccia \texttt{MNKPlayer} implementa le :)
 \subsection{Albero di gioco}
-\subsection{Generazione parziale dell'albero}
+Per la valutazione e la scelta della mossa da eseguire viene implementato un albero di gioco gestito nella classe \texttt{GameTree}.\\
+Ciascun nodo dell'albero contiene:
+\begin{itemize}		% ----------------- RIDURRE IL PADDING -----------------
+	\item La descrizione del nodo rappresentato
+	\item Il riferimento al nodo padre e una lista concatenata contenente i figli
+	\item Un punteggio euristico
+\end{itemize}
 \subsection{Euristica sui punteggi}
+Tramite la classe \texttt{BoardStatus} è possibile rappresentare ed effettuare la stima del possibile esito di una configurazione di gioco.\\
+Tale punteggio euristico viene calcolato tramite un algoritmo basato sulla programmazione dinamica.\\
+Siano $M[0 .. n-1]$ il vettore in input contenente la configurazione di gioco di ciascuna cella rappresentata dalle costanti \texttt{PLAYER}, \texttt{OPPONENT}, \texttt{FREE} e $S[0 .. n-1]$ il vettore contenente l'output, ove $S[i]$ contiene una coppia di interi rappresentanti il numero di celle allineabili e il numero di mosse necessarie per vincere selezionando la $i$-esima cella.
+\begin{equation}
+	S[0] = 
+	\begin{cases}
+	(0,0) & \mbox{se } M[0]=\mbox{\texttt{OPPONENT}} \\ 
+	(1,0) & \mbox{se } M[0]=\mbox{\texttt{PLAYER}} \\
+	(1,1) & \mbox{se } M[0]=\mbox{\texttt{FREE}}
+	\end{cases}
+\end{equation}
+% ---------------- DEFINIRE K ----------------
+\begin{equation}
+	S[i] = 
+	\begin{cases}
+	(0,0) & \mbox{se } M[i]=\mbox{\texttt{OPPONENT}} \\ 
+	(S[i-1].\text{aligned}+1,S[i-1].\text{moves}) & \mbox{se } S[i-1].\text{first} < K \texttt{ AND } M[i] = \texttt{PLAYER}\\
+	(S[i-1].\text{aligned}+1,S[i-1].\text{moves}+1) & \mbox{se } S[i-1].\text{first} < K \texttt{ AND } M[i] = \texttt{FREE}\\
+	(S[i-1].\text{aligned},S[i-1].\text{moves}-1) & \mbox{se } M[i]=\texttt{PLAYER AND } M[i-K] =\texttt{FREE}\\
+	(S[i-1].\text{aligned},S[i-1].\text{moves}) & \mbox{se } M[i]=\texttt{PLAYER AND } M[i-K] =\texttt{PLAYER}\\
+	(S[i-1].\text{aligned},S[i-1].\text{moves}) & \mbox{se } M[i]=\texttt{FREE AND } M[i-K] =\texttt{FREE}\\
+	(S[i-1].\text{aligned},S[i-1].\text{moves}+1) & \mbox{se } M[i]=\texttt{FREE AND } M[i-K] =\texttt{PLAYER}\\
+	\end{cases}
+\end{equation}
+
+\subsection{Generazione parziale dell'albero}
 \subsection{Valutazione mosse "interessanti"}
 \section{Conclusione}
 
