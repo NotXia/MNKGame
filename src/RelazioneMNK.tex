@@ -3,6 +3,8 @@
 \usepackage[italian]{babel}
 \usepackage[document]{ragged2e}
 \usepackage{amsfonts, amssymb, amsmath}
+\usepackage{empheq}
+\usepackage{mathtools}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -77,16 +79,17 @@ Ciascun nodo dell'albero contiene:
 Tramite la classe \texttt{BoardStatus} è possibile rappresentare ed effettuare la stima del possibile esito di una configurazione di gioco.\\
 Tale punteggio euristico viene calcolato tramite un algoritmo basato sulla programmazione dinamica.\\
 Siano $M[0 .. n-1]$ il vettore in input contenente la configurazione di gioco di ciascuna cella rappresentata dalle costanti \texttt{PLAYER}, \texttt{OPPONENT}, \texttt{FREE} e $S[0 .. n-1]$ il vettore contenente l'output, ove $S[i]$ contiene una coppia di interi rappresentanti il numero di celle allineabili e il numero di mosse necessarie per vincere selezionando la $i$-esima cella.
-\begin{equation}
+\begin{equation*}
 	S[0] = 
 	\begin{cases}
 	(0,0) & \mbox{se } M[0]=\mbox{\texttt{OPPONENT}} \\ 
 	(1,0) & \mbox{se } M[0]=\mbox{\texttt{PLAYER}} \\
 	(1,1) & \mbox{se } M[0]=\mbox{\texttt{FREE}}
 	\end{cases}
-\end{equation}
+\end{equation*}
 % ---------------- DEFINIRE K ----------------
-\begin{equation}
+\begin{equation*}
+\mathclap {
 	S[i] = 
 	\begin{cases}
 	(0,0) & \mbox{se } M[i]=\mbox{\texttt{OPPONENT}} \\ 
@@ -97,7 +100,10 @@ Siano $M[0 .. n-1]$ il vettore in input contenente la configurazione di gioco di
 	(S[i-1].\text{aligned},S[i-1].\text{moves}) & \mbox{se } M[i]=\texttt{FREE AND } M[i-K] =\texttt{FREE}\\
 	(S[i-1].\text{aligned},S[i-1].\text{moves}+1) & \mbox{se } M[i]=\texttt{FREE AND } M[i-K] =\texttt{PLAYER}\\
 	\end{cases}
-\end{equation}
+}
+\end{equation*}
+
+
 
 \subsection{Generazione parziale dell'albero}
 \subsection{Valutazione mosse "interessanti"}
