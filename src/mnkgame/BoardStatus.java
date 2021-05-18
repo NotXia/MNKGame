@@ -220,16 +220,6 @@ public class BoardStatus {
     }
 
     /**
-     * Riempie l'intera matrice degli Score delle righe
-     * @implNote Costo:
-     * */
-    private void fillRowsScore() {
-        for (int i=0; i<rows; i++) {
-            fillRowScoreAt(0, i);
-        }
-    }
-
-    /**
      * Riempie nella matrice degli Score delle colonne, la colonna contenente la cella nella posizione indicata
      * @implNote Costo:
      * */
@@ -247,16 +237,6 @@ public class BoardStatus {
         moves = getScoresArray(matrix.getColumnAt(x, y), OPPONENT_STATE);
         for (int j=0; j<rows; j++) {
             setScore(columnScore_opponent, x, j, moves[j]);
-        }
-    }
-
-    /**
-     * Riempie l'intera matrice degli Score delle colonne
-     * @implNote Costo:
-     * */
-    private void fillColumnsScore() {
-        for (int i=0; i<columns; i++) {
-            fillColumnScoreAt(i, 0);
         }
     }
 
@@ -292,19 +272,6 @@ public class BoardStatus {
     }
 
     /**
-     * Riempie l'intera matrice degli Score delle diagonali principali
-     * @implNote Costo:
-     * */
-    private void fillDiagonalLeftRightScore() {
-        for (int i=0; i<rows; i++) {
-            fillDiagonalLeftRightScoreAt(0, i);
-        }
-        for (int i=1; i<columns; i++) {
-            fillDiagonalLeftRightScoreAt(i, 0);
-        }
-    }
-
-    /**
      * Riempie nella matrice degli Score delle diagonali secondarie, la diagonale contenente la cella nella posizione indicata
      * @implNote Costo:
      * */
@@ -333,30 +300,6 @@ public class BoardStatus {
             setScore(diagonalRightLeftScore_opponent, i, j, moves[k]);
             i--; j++;
         }
-    }
-
-    /**
-     * Riempie l'intera matrice degli Score delle diagonali secondarie
-     * @implNote Costo:
-     * */
-    private void fillDiagonalRightLeftScore() {
-        for (int i=0; i<rows; i++) {
-            fillDiagonalRightLeftScoreAt(columns-1, i);
-        }
-        for (int i=columns-2; i>=0; i--) {
-            fillDiagonalRightLeftScoreAt(i, 0);
-        }
-    }
-
-    /**
-     * Riempie tutte le matrici degli Score
-     * @implNote Costo:
-     * */
-    public void generateScore() {
-        fillRowsScore();
-        fillColumnsScore();
-        fillDiagonalLeftRightScore();
-        fillDiagonalRightLeftScore();
     }
 
     /**
@@ -400,24 +343,6 @@ public class BoardStatus {
                 )
             );
         }
-    }
-
-    /**
-     * Restituisce il numero minimo di mosse necessarie per vincere controllando l'intera griglia di gioco
-     * @param toCheckStatus Indica lo stato della cella che si vuole controllare (giocatore o avversario)
-     * @implNote Costo:
-     * */
-    public int getGlobalBestMovesToWin(MNKCellState toCheckStatus) {
-        int best = target;
-
-        for (int i=0; i<rows; i++) {
-            for (int j=0; j<columns; j++) {
-                int s = getMovesToWinAt(j, i, toCheckStatus);
-                if (s < best) best = s;
-            }
-        }
-
-        return best;
     }
 
     public String toString() {

@@ -26,9 +26,9 @@ public class Node {
         LinkedList<MNKCell> markedCells = new LinkedList<>();
         Node iter = this.parent;
 
-        markedCells.addFirst(this.action);
+        markedCells.addLast(this.action);
         while (iter != null) {
-            markedCells.addFirst(iter.action);
+            markedCells.addLast(iter.action);
             iter = iter.parent;
         }
 

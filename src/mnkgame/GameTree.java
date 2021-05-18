@@ -134,7 +134,12 @@ public class GameTree {
         HashMap<String, Boolean> hasBeenEvaluated = new HashMap<>();
         PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>();
 
-        for (MNKCell markedCell : node.getMarkedCells()) {
+        Node iter = node;
+        //int k = 0;
+        while (iter != null) {
+            //if (k >= target*2 && moves.size() >= MAX_EVAL) { break; }
+            MNKCell markedCell = iter.action;
+
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
                     if (i == 0 && j == 0) { continue; }
@@ -151,6 +156,8 @@ public class GameTree {
                     }
                 }
             }
+            iter = iter.parent;
+            //k++;
         }
 
         return moves;
@@ -177,7 +184,7 @@ public class GameTree {
             PriorityQueue<EvaluationPosition> moves = getInterestingPositions(toEval, board);
 
             int i=0;
-            while (moves.size() != 0) {
+            while (moves.size() > 0) {
                 if (i >= MAX_EVAL && moves.peek().score > 2) { break; }
 
                 EvaluationPosition toVisit = moves.poll();

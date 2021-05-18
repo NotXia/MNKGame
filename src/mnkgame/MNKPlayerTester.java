@@ -159,6 +159,9 @@ public class MNKPlayerTester {
 				int n = 3; // Wait some more time to see if it stops
 				System.err.println("Player " + (curr+1) + " (" + Player[curr].playerName() + ") interrupted due to exception");
 				System.err.println(" " + ex);
+
+				ex.printStackTrace();
+
 				while(!task.isDone() && n > 0) {
 					System.err.println("Waiting for " + Player[curr].playerName() + " to stop ... (" + n + ")");
 					try {Thread.sleep(TIMEOUT*1000);} catch(InterruptedException e) {}
