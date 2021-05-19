@@ -172,7 +172,7 @@ public class BoardStatus {
             // Progapazione
             if (s[i].aligned == target) {
                 for (int k=1; k<=target-1 && i-k>=0; k++) {
-                    if ( (s[i-k].aligned==0 && s[i-k].moves==0) || (s[i-k].aligned == target &&  s[i-k].moves < s[i].moves) ) { break; }
+                    if ( (s[i-k].aligned==0 && s[i-k].moves==0) || (s[i-k].aligned == target && s[i-k].moves < s[i].moves) ) { break; }
                     s[i-k] = s[i];
                 }
             }

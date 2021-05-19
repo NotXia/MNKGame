@@ -17,7 +17,7 @@ public class GameTree {
     private final MNKGameState WIN_STATE, LOSS_STATE;
     private int maxScore, minScore;
     private int MAX_DEPTH;
-    private final int MAX_EVAL;
+    private final int MIN_EVAL;
     private final int WIN_SCORE, LOSS_SCORE, DRAW_SCORE;
 
     public GameTree(int M, int N, int K, boolean first) {
@@ -36,7 +36,7 @@ public class GameTree {
         this.minScore = -(M*N);
 
         this.MAX_DEPTH = 6;
-        this.MAX_EVAL = 5;
+        this.MIN_EVAL = 5;
 
         this.WIN_SCORE = target + 1;
         this.LOSS_SCORE = -target - 1;
@@ -185,7 +185,7 @@ public class GameTree {
 
             int i=0;
             while (moves.size() > 0) {
-                if (i >= MAX_EVAL && moves.peek().score > 2) { break; }
+                if (i >= MIN_EVAL && moves.peek().score > 2) { break; }
 
                 EvaluationPosition toVisit = moves.poll();
                 int toVisit_x = toVisit.x;
@@ -240,13 +240,13 @@ public class GameTree {
      * @param node Nodo di partenza
      * @implNote Costo:
      * */
-    private void extendLeafs(Node node) {
+    private void extendLeaves(Node node) {
         if (node.isLeaf() && !node.endState) {
             extendNode(node, 1);
         }
         else {
             for (Node child : node.children) {
-                extendLeafs(child);
+                extendLeaves(child);
             }
         }
     }
@@ -276,7 +276,7 @@ public class GameTree {
         else {
             root.setSelectedChild(bestChild);
             root = bestChild;
-            extendLeafs(root);
+            extendLeaves(root);
             alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
         }
 
@@ -313,7 +313,7 @@ public class GameTree {
             }
         }
 
-        extendLeafs(root);
+        extendLeaves(root);
         alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
         return root.action;
     }
