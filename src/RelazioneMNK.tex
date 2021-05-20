@@ -29,7 +29,7 @@
         \begin{minipage}[t]{0.47\textwidth}
         \begin{center}
         	{\large{\bf Cheikh Ibrahim $\cdot$ Zaid}}\\
-			{\large Matricola: 0000974909}
+			{\large Matricola: \texttt{0000974909}}
         \end{center}
 
 		\end{minipage}
@@ -37,7 +37,7 @@
 		\begin{minipage}[t]{0.47\textwidth}\raggedleft
 		\begin{center}
         	{\large{\bf Xia $\cdot$ Tian Cheng}}\\
-			{\large Matricola: 0000975129}
+			{\large Matricola: \texttt{0000975129}}
         \end{center}
 		\end{minipage}  
             
@@ -58,25 +58,46 @@
 \pagebreak
 
 
-\section{Introduzione}
+\section*{Introduzione}
 \justify
 Il progetto MNK-Game consiste nella realizzazione di un algoritmo in grado di giocare a una versione generalizzata del Tris.\\
 La criticità maggiore risiede nella valutazione delle possibili mosse da eseguire che crescono esponenzialmente nel progredire del gioco.\\
 Contemporaneamente, l'algoritmo deve avere la capacità di effettuare scelte qualitativamente accettabili.
 
-\section{Scelte progettuali}
-\subsection{Interfaccia \texttt{MNKPlayer}}
-La funzione \texttt{selectCell} dell'interfaccia \texttt{MNKPlayer} implementa le :)
-\subsection{Albero di gioco}
+\section*{Scelte progettuali}
+\subsection*{Interfaccia \texttt{MNKPlayer}}
+% ---------------------------------- CAMBIARE NOME AD OURPLAYER ----------------------------------
+L'interfaccia \texttt{MNKPlayer} viene implementata dalla classe \texttt{OurPlayer} che contiene, tra gli attributi, un oggetto \texttt{GameTree}.\\
+La funzione \texttt{selectCell}, quindi, restituisce la mossa da eseguire basandosi sullo stato dell'oggetto \texttt{GameTree}:
+\begin{algorithm*}
+\SetAlgoLined
+\texttt{MNKCell} mossaScelta $\gets$ \texttt{null}\\
+\vspace{0.2cm}
+\eIf{gameTree.isEmpty()}{
+	\eIf{gioco per primo}{
+		mossaScelta $\gets$ \textit{centro della griglia}\\
+		gameTree.generate(mossaScelta)
+	}{
+		gameTree.generate(\textit{mossa dell'avversario})\\
+		mossaScelta $\gets$ gameTree.nextMove()
+	}
+}{
+	gameTree.setOpponentMove(\textit{mossa dell'avversario})\\
+	mossaScelta $\gets$ gameTree.nextMove()
+}
+\end{algorithm*}
+
+\subsection*{Albero di gioco}
 Per la valutazione e la scelta della mossa da eseguire viene implementato un albero di gioco gestito nella classe \texttt{GameTree}.\\
 Ciascun nodo dell'albero contiene:
-\begin{itemize}		% ----------------- RIDURRE IL PADDING -----------------
+\begin{itemize}
+\setlength\itemsep{0.05cm}
 	\item La descrizione del nodo rappresentato
 	\item Il riferimento al nodo padre e una lista concatenata contenente i figli
 	\item Un punteggio euristico
 \end{itemize}
 
-\subsection{Generazione parziale dell'albero}
+\subsection*{Generazione parziale dell'albero}
 Il numero dei nodi generati dell'albero di gioco cresce in modo esponenziale all'aumentare dell'altezza;
 per tale ragione è impossibile generare l'intero albero per configurazioni di gioco con un elevato numero di celle.\\
 La generazione dell'albero deve essere quindi limitata sia in altezza che nel numero di nodi da elaborare.\\
@@ -84,7 +105,7 @@ All'interno della classe \texttt{GameTree} sono quindi presenti le costanti \tex
 Al termine di ogni fase di generazione dell'albero, la struttura viene elaborata dall'algoritmo \texttt{AlphaBeta Pruning} per propagare i punteggi delle foglie alla radice ed eventualmente tagliare determinati sottoalberi inconvenienti.\\
 Per mantenere costante in altezza l'albero, in seguito alla selezione di una mossa, viene richiamata la funzione \texttt{extendLeaves(Node root)} che estende le foglie dell'albero radicato nel nodo in input.
 
-\subsection{Euristica sui punteggi}
+\subsection*{Euristica sui punteggi}
 Tramite la classe \texttt{BoardStatus} è possibile rappresentare ed effettuare la stima del possibile esito di una configurazione di gioco.\\
 Tale punteggio euristico viene calcolato tramite un algoritmo basato sulla programmazione dinamica che prende in input il vettore $M[0 .. n-1]$ contenente la configurazione di gioco di ciascuna cella rappresentata da \texttt{PLAYER}, \texttt{OPPONENT}, \texttt{FREE} e restituisce il vettore $S[0 .. n-1]$, ove $S[i]$ contiene una coppia di interi rappresentanti il numero di celle allineabili e il numero di mosse necessarie per vincere se si seleziona l'$i$-esima cella. Le seguenti equazioni di ricorrenza descrivono le varie casistiche previste dall'algoritmo:
 \begin{equation*}
@@ -127,11 +148,10 @@ Tale punteggio euristico viene calcolato tramite un algoritmo basato sulla progr
 }
 \end{equation*}
 \\
-Per trovare il numero di mosse ottimale per ciascuna cella, alla posizione $i$-esima, avviene una fase di propagazione del punteggio:\\
-
-\begin{algorithm*}[H]
+Per trovare il numero di mosse ottimale per ciascuna cella, alla posizione $i$-esima, avviene una fase di propagazione del punteggio:
+\begin{algorithm*}
 \SetAlgoLined
- \For{$j = i-1$ to $i-K+1$}{
+ \For{$j \gets i-1$ to $i-K+1$}{
  \textit{// L'allineamento viene interrotto da una mossa dell'avversario\\}
   \If{$M[j] = \texttt{OPPONENT}$}{
   	\texttt{break}
@@ -144,9 +164,13 @@ Per trovare il numero di mosse ottimale per ciascuna cella, alla posizione $i$-e
  }
 \end{algorithm*}
 
-\subsection{Valutazione mosse "interessanti"}
-\section{Conclusione}
+\subsection*{Valutazione mosse "interessanti"}
+Per ricercare mosse successive a partire da un nodo il cui stato di gioco non sia terminale, viene richiamata la funzione \texttt{getInterestingPositions} che restituisce una lista con priorità di posizioni organizzate in ordine crescente di punteggio.\\
+La funzione \texttt{getInterestingPositions(Node node, BoardStatus board)} prende in input un nodo ed effettua la scansione di tutte le celle adiacenti alle posizioni già marcate e di queste ne calcola il punteggio euristico relativo sia al giocatore che all'avversario e li inserisce nella coda.\\
+Quindi, all'interno della funzione \texttt{createTree} vengono estratte dalla coda tutte le mosse con un punteggio minore o uguale a \texttt{SCORE\_THRESHOLD} ed eventualmente altre mosse fino al raggiungimento del valore minimo \texttt{MIN\_EVAL} o fino a coda vuota.
 
+\section*{Conclusione}
+Il progetto è stato caruccio ma non lo rifarei.
 
 \end{document}
 
