@@ -3,7 +3,7 @@ package mnkgame;
 public class OurPlayer implements MNKPlayer {
     private int rows, columns, target;
     private boolean first;
-    private GameTree decisionTree;
+    private GameTree gameTree;
 
     public OurPlayer() {
     }
@@ -13,7 +13,7 @@ public class OurPlayer implements MNKPlayer {
         this.columns = N;
         this.target = K;
         this.first = first;
-        this.decisionTree = new GameTree(M, N, K, first);
+        this.gameTree = new GameTree(M, N, K, first);
     }
 
     public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
@@ -23,19 +23,19 @@ public class OurPlayer implements MNKPlayer {
 
         MNKCell outCell;
 
-        if (this.decisionTree.isEmpty()) {
+        if (this.gameTree.isEmpty()) {
             if (this.first) {
                 outCell = new MNKCell(rows/2, columns/2, MNKCellState.P1);
-                this.decisionTree.generate(outCell);
+                this.gameTree.generate(outCell);
             }
             else {
-                this.decisionTree.generate(MC[MC.length-1]);
-                outCell = this.decisionTree.nextMove();
+                this.gameTree.generate(MC[MC.length-1]);
+                outCell = this.gameTree.nextMove();
             }
         }
         else {
-            this.decisionTree.setOpponentMove(MC[MC.length-1]);
-            outCell = this.decisionTree.nextMove();
+            this.gameTree.setOpponentMove(MC[MC.length-1]);
+            outCell = this.gameTree.nextMove();
         }
 
         if (true) {

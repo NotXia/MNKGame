@@ -17,7 +17,7 @@ public class GameTree {
     private final MNKGameState WIN_STATE, LOSS_STATE;
     private int maxScore, minScore;
     private int MAX_DEPTH;
-    private final int MIN_EVAL;
+    private final int MIN_EVAL, SCORE_THRESHOLD;
     private final int WIN_SCORE, LOSS_SCORE, DRAW_SCORE;
 
     public GameTree(int M, int N, int K, boolean first) {
@@ -37,6 +37,7 @@ public class GameTree {
 
         this.MAX_DEPTH = 6;
         this.MIN_EVAL = 5;
+        this.SCORE_THRESHOLD = 2;
 
         this.WIN_SCORE = target + 1;
         this.LOSS_SCORE = -target - 1;
@@ -185,7 +186,7 @@ public class GameTree {
 
             int i=0;
             while (moves.size() > 0) {
-                if (i >= MIN_EVAL && moves.peek().score > 2) { break; }
+                if (i >= MIN_EVAL && moves.peek().score > SCORE_THRESHOLD) { break; }
 
                 EvaluationPosition toVisit = moves.poll();
                 int toVisit_x = toVisit.x;
