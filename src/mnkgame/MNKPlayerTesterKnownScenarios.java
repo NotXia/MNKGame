@@ -22,10 +22,8 @@
 
 package mnkgame;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.*;
 
 
@@ -44,7 +42,7 @@ import java.util.concurrent.*;
  * &nbsp;&nbsp;-v &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Verbose
  * </p>
  */
-public class MNKPlayerTesterChallenge {
+public class MNKPlayerTesterKnownScenarios {
 	private static int     TIMEOUT = 10;
 	private static int     ROUNDS  = 1;
 	private static boolean VERBOSE = false;
@@ -69,20 +67,20 @@ public class MNKPlayerTesterChallenge {
 	}
 
 
-	private MNKPlayerTesterChallenge() {
+	private MNKPlayerTesterKnownScenarios() {
 	}
 
-	
+
 	private static void initGame() {
 		if(VERBOSE) System.out.println("Initializing " + M + "," + N + "," + K + " board");
 		B = new MNKBoard(M,N,K);
 		// Timed-out initializaton of the MNKPlayers
 		for(int k = 0; k < 2; k++) {
 			if(VERBOSE) if(VERBOSE) System.out.println("Initializing " + Player[k].playerName() + " as Player " + (k+1));
-			final int i = k; // need to have a final variable here 
+			final int i = k; // need to have a final variable here
 			final Runnable initPlayer = new Thread() {
-				@Override 
-				public void run() { 
+				@Override
+				public void run() {
 					Player[i].initPlayer(B.M,B.N,B.K,i == 0,TIMEOUT);
 				}
 			};
@@ -90,16 +88,16 @@ public class MNKPlayerTesterChallenge {
 			final ExecutorService executor = Executors.newSingleThreadExecutor();
 			final Future future = executor.submit(initPlayer);
 			executor.shutdown();
-			try { 
-				future.get(TIMEOUT, TimeUnit.SECONDS); 
-			} 
+			try {
+				future.get(TIMEOUT, TimeUnit.SECONDS);
+			}
 			catch (TimeoutException e) {
 				System.err.println("Error: " + Player[i].playerName() + " interrupted: initialization takes too much time");
 				System.exit(1);
 			}
-			catch (Exception e) { 
+			catch (Exception e) {
 				System.err.println(e);
-				System.exit(1);		
+				System.exit(1);
 			}
 			if (!executor.isTerminated())
 				executor.shutdownNow();
@@ -127,9 +125,9 @@ public class MNKPlayerTesterChallenge {
 			final ExecutorService executor = Executors.newSingleThreadExecutor();
 			final Future<MNKCell> task     = executor.submit(new StoppablePlayer(Player[curr],B));
 			executor.shutdown(); // Makes the  ExecutorService stop accepting new tasks
-			
+
 			MNKCell c = null;
-			
+
 			try {
 				c = task.get(TIMEOUT, TimeUnit.SECONDS);
 			}
@@ -141,13 +139,13 @@ public class MNKPlayerTesterChallenge {
 					try {Thread.sleep(TIMEOUT*1000);} catch(InterruptedException e) {}
 					n--;
 				}
-				
+
 				if(n == 0) {
 					System.err.println("Player " + (curr+1) + " (" +Player[curr].playerName() + ") still running: game closed");
 					System.exit(1);
 				} else {
 					System.err.println("Player " + (curr+1) + " (" + Player[curr].playerName() + ") eventually stopped: round closed");
-					return curr == 0 ? GameState.ERRP1 : GameState.ERRP2; 
+					return curr == 0 ? GameState.ERRP1 : GameState.ERRP2;
 				}
 			}
 			catch (Exception ex) {
@@ -165,7 +163,7 @@ public class MNKPlayerTesterChallenge {
 				System.err.println("Player " + (curr+1) + " (" + Player[curr].playerName() + ") eventually stopped: round closed");
 				return curr == 0 ? GameState.ERRP1 : GameState.ERRP2;
 			}
-			
+
 			if (!executor.isTerminated())
 				executor.shutdownNow();
 
@@ -177,104 +175,65 @@ public class MNKPlayerTesterChallenge {
 				return curr == 0 ? GameState.ERRP1 : GameState.ERRP2;
 			}
 		}
-		
+
 		return B.gameState() == MNKGameState.DRAW ? GameState.DRAW : (B.gameState() == MNKGameState.WINP1 ? GameState.WINP1 : GameState.WINP2);
 	}
 
 	public static void main(String[] args) {
 		//VERBOSE = true;
-		String[] players = new String[]{"mnkgame.OurPlayer", "mnkgame.RandomPlayer", "mnkgame.QuasiRandomPlayer"};
 
-		HashMap<String, Integer> scores = new HashMap<>();
-		final int WIN = 0, LOSS = 1, DRAW = 2;
-		HashMap<String, Integer[]> kda = new HashMap<>(); // WIN-LOSS-DRAW
-		for (int i=0; i<players.length; i++) {
-			scores.put(players[i], 0);
-			kda.put(players[i], new Integer[]{0, 0, 0});
-		}
+		int[][] configs = new int[][]{new int[]{3, 3, 3}, new int[]{3, 4, 3}, new int[]{4, 3, 3}, new int[]{4, 4, 4}, new int[]{4, 5, 4}, new int[]{5, 4, 4}, new int[]{6, 5, 4}, new int[]{8, 4, 4}, new int[]{30, 4, 4} };
+		GameState[] expectedResult = new GameState[]{GameState.DRAW, GameState.WINP1, GameState.WINP1, GameState.DRAW, GameState.DRAW, GameState.DRAW, GameState.WINP1, GameState.DRAW, GameState.WINP1};
 
-		int[][] configs = new int[][]{
-			new int[]{3, 3, 3}, new int[]{4, 3, 3}, new int[]{4, 4, 3}, new int[]{4, 4, 4}, new int[]{5, 4, 4}, new int[]{5, 5, 4},
-			new int[]{5, 5, 5}, new int[]{6, 4, 4}, new int[]{6, 5, 4}, new int[]{6, 6, 4}, new int[]{6, 6, 5}, new int[]{6, 6, 6},
-			new int[]{7, 4, 4}, new int[]{7, 5, 4}, new int[]{7, 6, 4}, new int[]{7, 7, 4}, new int[]{7, 5, 5}, new int[]{7, 6, 5},
-			new int[]{7, 7, 5}, new int[]{7, 7, 6}, new int[]{7, 7, 7}, new int[]{8, 8, 4}, new int[]{10, 10, 5}, new int[]{50, 50, 10}, new int[]{70, 70, 10}
-		};
+		HashMap<String, GameState[]> result = new HashMap<>();
+		result.put("mnkgame.OurPlayer", new GameState[configs.length]);
+		result.put("mnkgame.QuasiRandomPlayer", new GameState[configs.length]);
 
 		LinkedList<String[]> challenges = new LinkedList<>();
-		for (int i=0; i<players.length; i++) {
-			for (int j=i+1; j<players.length; j++) {
-				challenges.add(new String[]{players[i], players[j]});
-			}
-		}
+		challenges.add(new String[]{"mnkgame.OurPlayer", "mnkgame.OurPlayer"});
+		challenges.add(new String[]{"mnkgame.OurPlayer", "mnkgame.QuasiRandomPlayer"});
 
-		for (int[] config : configs) {
-			M = config[0]; N = config[1]; K = config[2];
+		for (int i=0; i< configs.length; i++) {
+			M = configs[i][0]; N = configs[i][1]; K = configs[i][2];
 
 			for (String pair[] : challenges) {
-				for (int j=0; j<4; j++) {
-					String firstPlayer="", secondPlayer="";
-					try {
-						if (j < 2) { // Due partite come primo giocatore
-							Player[0] = (MNKPlayer) Class.forName(pair[0]).getDeclaredConstructor().newInstance();
-							Player[1] = (MNKPlayer) Class.forName(pair[1]).getDeclaredConstructor().newInstance();
-							firstPlayer = pair[0];
-							secondPlayer = pair[1];
-						}
-						else { // Due partite come secondo giocatore
-							Player[0] = (MNKPlayer) Class.forName(pair[1]).getDeclaredConstructor().newInstance();
-							Player[1] = (MNKPlayer) Class.forName(pair[0]).getDeclaredConstructor().newInstance();
-							firstPlayer = pair[1];
-							secondPlayer = pair[0];
-						}
-					}
-					catch(Exception e) { }
+				String firstPlayer="", secondPlayer="";
+				try {
+					Player[0] = (MNKPlayer) Class.forName(pair[0]).getDeclaredConstructor().newInstance();
+					Player[1] = (MNKPlayer) Class.forName(pair[1]).getDeclaredConstructor().newInstance();
+					firstPlayer = pair[0];
+					secondPlayer = pair[1];
+				}
+				catch(Exception e) { }
 
-					System.out.println("Game type : " + M + "," + N + "," + K);
-					System.out.println("Player1   : " + Player[0].playerName());
-					System.out.println("Player2   : " + Player[1].playerName());
+				System.out.println("Game type : " + M + "," + N + "," + K);
+				System.out.println("Player1   : " + Player[0].playerName());
+				System.out.println("Player2   : " + Player[1].playerName());
 
-					initGame();
-					GameState state = runGame();
-					switch(state) {
-						case WINP1:
-							scores.put(firstPlayer, scores.get(firstPlayer)+WINP1SCORE);
-							kda.put(firstPlayer, new Integer[]{kda.get(firstPlayer)[WIN]+1, kda.get(firstPlayer)[LOSS], kda.get(firstPlayer)[DRAW]});
-							kda.put(secondPlayer, new Integer[]{kda.get(secondPlayer)[WIN], kda.get(secondPlayer)[LOSS]+1, kda.get(secondPlayer)[DRAW]});
-							break;
-						case WINP2:
-							scores.put(secondPlayer, scores.get(secondPlayer)+WINP2SCORE);
-							kda.put(firstPlayer, new Integer[]{kda.get(firstPlayer)[WIN], kda.get(firstPlayer)[LOSS]+1, kda.get(firstPlayer)[DRAW]});
-							kda.put(secondPlayer, new Integer[]{kda.get(secondPlayer)[WIN]+1, kda.get(secondPlayer)[LOSS], kda.get(secondPlayer)[DRAW]});
-							break;
-						case ERRP1:
-							scores.put(secondPlayer, scores.get(secondPlayer)+ERRSCORE);
-							kda.put(firstPlayer, new Integer[]{kda.get(firstPlayer)[WIN], kda.get(firstPlayer)[LOSS]+1, kda.get(firstPlayer)[DRAW]});
-							kda.put(secondPlayer, new Integer[]{kda.get(secondPlayer)[WIN]+1, kda.get(secondPlayer)[LOSS], kda.get(secondPlayer)[DRAW]});
-							break;
-						case ERRP2:
-							scores.put(firstPlayer, scores.get(firstPlayer)+ERRSCORE);
-							kda.put(firstPlayer, new Integer[]{kda.get(firstPlayer)[WIN]+1, kda.get(firstPlayer)[LOSS], kda.get(firstPlayer)[DRAW]});
-							kda.put(secondPlayer, new Integer[]{kda.get(secondPlayer)[WIN], kda.get(secondPlayer)[LOSS]+1, kda.get(secondPlayer)[DRAW]});
-							break;
-						case DRAW :
-							scores.put(firstPlayer, scores.get(firstPlayer)+DRAWSCORE);
-							scores.put(secondPlayer, scores.get(secondPlayer)+DRAWSCORE);
-							kda.put(firstPlayer, new Integer[]{kda.get(firstPlayer)[WIN], kda.get(firstPlayer)[LOSS], kda.get(firstPlayer)[DRAW]+1});
-							kda.put(secondPlayer, new Integer[]{kda.get(secondPlayer)[WIN], kda.get(secondPlayer)[LOSS], kda.get(secondPlayer)[DRAW]+1});
-							break;
-					}
-					System.out.println("Game state: " + state);
-					System.out.println("-------------------------");
-					System.out.println();
-				} // for (int j=0; j<4; j++)
+				initGame();
+				GameState state = runGame();
+
+				GameState[] poggia = result.get(secondPlayer);
+				poggia[i] = state;
+				result.put(secondPlayer, poggia);
+
+				System.out.println("Game state: " + state);
+				System.out.println("-------------------------");
+				System.out.println();
 			} // for (String pair[] : challenges)
 		} // for (int[] config : configs)
 
-		System.out.println(String.format("%30s\t%5s\t%5s\t%5s\t%10s", "PLAYER", "WIN", "LOSS", "DRAW", "SCORE"));
-		for (String player : players) {
-			String out = String.format("%30s\t%5s\t%5s\t%5s\t%10s", player, kda.get(player)[WIN], kda.get(player)[LOSS], kda.get(player)[DRAW], scores.get(player));
-			System.out.println(out);
+		System.out.print(String.format("%30s\t", "OPPONENT"));
+		for (int i=0; i< configs.length; i++) {
+			System.out.print(String.format("%15s\t", ""+configs[i][0]+" "+configs[i][1]+" "+configs[i][2]+" (" + expectedResult[i] + ")" ));
 		}
-
+		System.out.println();
+		for (String[] player : challenges) {
+			System.out.print(String.format("%30s\t", player[1]));
+			for (int i=0; i< configs.length; i++) {
+				System.out.print(String.format("%15s\t", result.get(player[1])[i] == expectedResult[i] ? "ok" : result.get(player[1])[i]));
+			}
+			System.out.println();
+		}
 	}
 }
