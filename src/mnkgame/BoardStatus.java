@@ -1,5 +1,8 @@
 package mnkgame;
 
+import java.util.LinkedList;
+import java.util.PriorityQueue;
+
 public class BoardStatus {
     private class Score {
         public int aligned, moves;
@@ -345,6 +348,62 @@ public class BoardStatus {
         }
     }
 
+    public LinkedList<EvaluationPosition> getIntrestingAdjacencyAt(int x, int y) {
+        LinkedList<EvaluationPosition> out = new LinkedList<>();
+        Score[][] rowScore = matrix.getAt(x, y) == PLAYER_STATE ? rowScore_player : rowScore_opponent;
+        Score[][] columnScore = matrix.getAt(x, y) == PLAYER_STATE ? columnScore_player : columnScore_opponent;
+        Score[][] diagonalLeftRightScore = matrix.getAt(x, y) == PLAYER_STATE ? diagonalLeftRightScore_player : diagonalLeftRightScore_opponent;
+        Score[][] diagonalRightLeftScore = matrix.getAt(x, y) == PLAYER_STATE ? diagonalRightLeftScore_player : diagonalRightLeftScore_opponent;
+
+        EvaluationPosition best = null;
+
+        // Riga
+        if (matrix.getAt(x-1, y) == MNKCellState.FREE) {
+            best = new EvaluationPosition(x-1, y, rowScore[x-1][y].moves);
+        }
+        if (matrix.getAt(x+1, y) == MNKCellState.FREE) {
+            if (best == null || rowScore[x+1][y].moves < best.score) {
+                best = new EvaluationPosition(x+1, y, rowScore[x+1][y].moves);
+            }
+        }
+        if (best != null) { out.add(best); }
+
+        // Colonna
+        if (matrix.getAt(x, y-1) == MNKCellState.FREE) {
+            best = new EvaluationPosition(x, y-1, columnScore[x][y-1].moves);
+        }
+        if (matrix.getAt(x, y+1) == MNKCellState.FREE) {
+            if (best == null || columnScore[x][y+1].moves < best.score) {
+                best = new EvaluationPosition(x, y+1, columnScore[x][y+1].moves);
+            }
+        }
+        if (best != null) { out.add(best); }
+
+        // Diagonale principale
+        if (matrix.getAt(x-1, y-1) == MNKCellState.FREE) {
+            best = new EvaluationPosition(x-1, y-1, diagonalLeftRightScore[x-1][y-1].moves);
+        }
+        if (matrix.getAt(x+1, y+1) == MNKCellState.FREE) {
+            if (best == null || diagonalLeftRightScore[x+1][y+1].moves < best.score) {
+                best = new EvaluationPosition(x+1, y+1, diagonalLeftRightScore[x+1][y+1].moves);
+            }
+        }
+        if (best != null) { out.add(best); }
+
+        // Diagonale secondaria
+        if (matrix.getAt(x-1, y+1) == MNKCellState.FREE) {
+            best = new EvaluationPosition(x-1, y+1, diagonalRightLeftScore[x-1][y+1].moves);
+        }
+        if (matrix.getAt(x+1, y-1) == MNKCellState.FREE) {
+            if (best == null || diagonalRightLeftScore[x+1][y-1].moves < best.score) {
+                best = new EvaluationPosition(x+1, y-1, diagonalRightLeftScore[x+1][y-1].moves);
+            }
+        }
+        if (best != null) { out.add(best); }
+
+        return out;
+    }
+
     public String toString() {
         return matrix.toString(PLAYER_STATE);
     }
@@ -376,6 +435,8 @@ public class BoardStatus {
 
     public static void main(String[] args) {
         BoardStatus bs = new BoardStatus(5, 5, 4, MNKCellState.P1);
+
+        System.out.println(null == MNKCellState.FREE);
 
         bs.setAt(0, 0, MNKCellState.P2);
         bs.setAt(1, 0, MNKCellState.P2);

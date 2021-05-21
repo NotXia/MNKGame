@@ -33,6 +33,7 @@ public class Matrix {
     }
 
     public MNKCellState getAt(int x, int y) {
+        if (x < 0 || x >= columns || y < 0 || y >= rows) { return null; }
         return matrix[x][y];
     }
 

@@ -38,7 +38,7 @@ public class OurPlayer implements MNKPlayer {
             outCell = this.gameTree.nextMove();
         }
 
-        if (true) {
+        if (false) {
             end_t = System.currentTimeMillis();
             elapsed = (end_t - start_t);
             min = elapsed / (60*1000);

@@ -131,14 +131,34 @@ public class GameTree {
      * Restituisce una Priority Queue di posizioni da visitare ordinate in base alla funzione euristica.
      * @implNote Costo:
      * */
+    /*public PriorityQueue<EvaluationPosition> getInterestingPositions(Node node, BoardStatus board) {
+        HashMap<String, Boolean> hasBeenEvaluated = new HashMap<>();
+        PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>();
+
+        Node iter = node;
+        while (iter != null) {
+            MNKCell markedCell = iter.action;
+            int x = markedCell.j, y = markedCell.i;
+
+            board.generateScoreAt(x, y);
+            for (EvaluationPosition position : board.getIntrestingAdjacencyAt(x, y)) {
+                if (hasBeenEvaluated.get(""+position.x+" "+position.y) == null) {
+                    moves.add( position );
+                    hasBeenEvaluated.put(""+position.x+" "+position.y, true);
+                }
+            }
+
+            iter = iter.parent;
+        }
+
+        return moves;
+    }*/
     public PriorityQueue<EvaluationPosition> getInterestingPositions(Node node, BoardStatus board) {
         HashMap<String, Boolean> hasBeenEvaluated = new HashMap<>();
         PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>();
 
         Node iter = node;
-        //int k = 0;
         while (iter != null) {
-            //if (k >= target*2 && moves.size() >= MAX_EVAL) { break; }
             MNKCell markedCell = iter.action;
 
             for (int i = -1; i <= 1; i++) {
@@ -150,15 +170,14 @@ public class GameTree {
                     if (isValidCell(toVisit_x, toVisit_y)) {
                         if (board.isFreeAt(toVisit_x, toVisit_y) && hasBeenEvaluated.get(""+toVisit_x+" "+toVisit_y) == null) {
                             board.generateScoreAt(toVisit_x, toVisit_y);
-                            moves.add( new EvaluationPosition(toVisit_x, toVisit_y, board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE)) );
-                            moves.add( new EvaluationPosition(toVisit_x, toVisit_y, board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE)) );
+                            int best = Math.min(board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE), board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE));
+                            moves.add( new EvaluationPosition(toVisit_x, toVisit_y, best) );
                             hasBeenEvaluated.put(""+toVisit_x+" "+toVisit_y, true);
                         }
                     }
                 }
             }
             iter = iter.parent;
-            //k++;
         }
 
         return moves;
