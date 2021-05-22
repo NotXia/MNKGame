@@ -207,7 +207,10 @@ public class MNKPlayerTesterChallenge {
 			}
 		}
 
-		for (int[] config : configs) {
+		LinkedList<String> matches = new LinkedList<>();
+
+		for (int i=0; i<configs.length; i++) {
+			int[] config = configs[i];
 			M = config[0]; N = config[1]; K = config[2];
 
 			for (String pair[] : challenges) {
@@ -235,6 +238,9 @@ public class MNKPlayerTesterChallenge {
 
 					initGame();
 					GameState state = runGame();
+
+					matches.addLast( String.format("(%d %d %d)\t%30s\t%30s\t%10s", M, N, K, firstPlayer, secondPlayer, ""+state) );
+
 					switch(state) {
 						case WINP1:
 							scores.put(firstPlayer, scores.get(firstPlayer)+WINP1SCORE);
@@ -275,6 +281,15 @@ public class MNKPlayerTesterChallenge {
 			String out = String.format("%30s\t%5s\t%5s\t%5s\t%10s", player, kda.get(player)[WIN], kda.get(player)[LOSS], kda.get(player)[DRAW], scores.get(player));
 			System.out.println(out);
 		}
+
+		System.out.println();
+
+		for (String match : matches) {
+			//if (match.contains("OurPlayer")) {
+				System.out.println(match);
+			//}
+		}
+
 
 	}
 }
