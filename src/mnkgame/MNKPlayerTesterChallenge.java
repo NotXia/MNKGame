@@ -142,13 +142,8 @@ public class MNKPlayerTesterChallenge {
 					n--;
 				}
 				
-				if(n == 0) {
-					System.err.println("Player " + (curr+1) + " (" +Player[curr].playerName() + ") still running: game closed");
-					System.exit(1);
-				} else {
-					System.err.println("Player " + (curr+1) + " (" + Player[curr].playerName() + ") eventually stopped: round closed");
-					return curr == 0 ? GameState.ERRP1 : GameState.ERRP2; 
-				}
+				System.err.println("Player " + (curr+1) + " (" + Player[curr].playerName() + ") eventually stopped: round closed");
+				return curr == 0 ? GameState.ERRP1 : GameState.ERRP2;
 			}
 			catch (Exception ex) {
 				int n = 3; // Wait some more time to see if it stops

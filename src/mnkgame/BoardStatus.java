@@ -1,8 +1,5 @@
 package mnkgame;
 
-import java.util.LinkedList;
-import java.util.PriorityQueue;
-
 public class BoardStatus {
     private class Score {
         public int aligned, moves;
@@ -26,8 +23,8 @@ public class BoardStatus {
     private int columns, rows, target;
     private final MNKCellState PLAYER_STATE, OPPONENT_STATE;
 
-    private Score[][] rowScore_player, columnScore_player, diagonalLeftRightScore_player, diagonalRightLeftScore_player;
-    private Score[][] rowScore_opponent, columnScore_opponent, diagonalLeftRightScore_opponent, diagonalRightLeftScore_opponent;
+    private Score[][] rowScore_player, columnScore_player, mainDiagonalScore_player, secondaryDiagonalScore_player;
+    private Score[][] rowScore_opponent, columnScore_opponent, mainDiagonalScore_opponent, secondaryDiagonalScore_opponent;
 
     /**
      * @implNote Costo: O(M*N)
@@ -44,12 +41,13 @@ public class BoardStatus {
 
         rowScore_player = new Score[columns][rows];
         columnScore_player = new Score[columns][rows];
-        diagonalLeftRightScore_player = new Score[columns][rows];
-        diagonalRightLeftScore_player = new Score[columns][rows];
+        mainDiagonalScore_player = new Score[columns][rows];
+        secondaryDiagonalScore_player = new Score[columns][rows];
+
         rowScore_opponent = new Score[columns][rows];
         columnScore_opponent = new Score[columns][rows];
-        diagonalLeftRightScore_opponent = new Score[columns][rows];
-        diagonalRightLeftScore_opponent = new Score[columns][rows];
+        mainDiagonalScore_opponent = new Score[columns][rows];
+        secondaryDiagonalScore_opponent = new Score[columns][rows];
     };
 
     /**
@@ -92,28 +90,28 @@ public class BoardStatus {
         }
 
         int i=x, j=y;
-        while(i >= 0 && j >= 0) {
-            diagonalLeftRightScore_player[i][j] = null;
-            diagonalLeftRightScore_opponent[i][j] = null;
+        while (i >= 0 && j >= 0) {
+            mainDiagonalScore_player[i][j] = null;
+            mainDiagonalScore_opponent[i][j] = null;
             i--; j--;
         }
         i=x+1; j=y+1;
-        while(i < columns && j < rows) {
-            diagonalLeftRightScore_player[i][j] = null;
-            diagonalLeftRightScore_opponent[i][j] = null;
+        while (i < columns && j < rows) {
+            mainDiagonalScore_player[i][j] = null;
+            mainDiagonalScore_opponent[i][j] = null;
             i++; j++;
         }
 
         i=x; j=y;
-        while(i < columns && j >= 0) {
-            diagonalRightLeftScore_player[i][j] = null;
-            diagonalRightLeftScore_opponent[i][j] = null;
+        while (i < columns && j >= 0) {
+            secondaryDiagonalScore_player[i][j] = null;
+            secondaryDiagonalScore_opponent[i][j] = null;
             i++; j--;
         }
         i=x-1; j=y+1;
-        while(i >= 0 && j < rows) {
-            diagonalRightLeftScore_player[i][j] = null;
-            diagonalRightLeftScore_opponent[i][j] = null;
+        while (i >= 0 && j < rows) {
+            secondaryDiagonalScore_player[i][j] = null;
+            secondaryDiagonalScore_opponent[i][j] = null;
             i--; j++;
         }
     }
@@ -125,13 +123,13 @@ public class BoardStatus {
      * @implNote Costo: (max{M, N} * K)
      * */
     private Score[] getScoresArray(MNKCellState board[], MNKCellState toCheckState) {
-        if (board.length < target) {
+        /*if (board.length < target) {
             Score[] s = new Score[board.length];
             for (int i=0; i<board.length; i++) {
                 s[i] = new Score(0, 0);
             }
             return s;
-        }
+        }*/
 
         MNKCellState oppositeState = toCheckState == MNKCellState.P1 ? MNKCellState.P2 : MNKCellState.P1;
         Score[] s = new Score[board.length];
@@ -176,7 +174,8 @@ public class BoardStatus {
             if (s[i].aligned == target) {
                 for (int k=1; k<=target-1 && i-k>=0; k++) {
                     if ( (s[i-k].aligned==0 && s[i-k].moves==0) || (s[i-k].aligned == target && s[i-k].moves < s[i].moves) ) { break; }
-                    s[i-k] = s[i];
+                    s[i-k].aligned = s[i].aligned;
+                    s[i-k].moves = s[i].moves;
                 }
             }
         }
@@ -192,7 +191,7 @@ public class BoardStatus {
         if (value.aligned == 0 && value.moves == 0) {
             score[x][y] = new Score(0, target);
         }
-        else if(value.aligned != target) {
+        else if (value.aligned != target) {
             score[x][y] = new Score(value.aligned, target);
         }
         else {
@@ -247,29 +246,28 @@ public class BoardStatus {
      * Riempie nella matrice degli Score delle diagonali principali, la diagonale contenente la cella nella posizione indicata
      * @implNote Costo:
      * */
-    private void fillDiagonalLeftRightScoreAt(int x, int y) {
-        if (diagonalLeftRightScore_player[x][y] != null && diagonalLeftRightScore_opponent[x][y] != null) { return; }
+    private void fillMainDiagonalScoreAt(int x, int y) {
+        if (mainDiagonalScore_player[x][y] != null && mainDiagonalScore_opponent[x][y] != null) { return; }
         Score[] moves;
 
-        // Giocatore
-        moves = getScoresArray(matrix.getDiagonalLeftRightAt(x, y), PLAYER_STATE);
-        int i = x, j = y;
-        while(i > 0 && j > 0) {
-            i--; j--;
+        int diagonalStartX = x, diagonalStartY = y;
+        while(diagonalStartX > 0 && diagonalStartY > 0) {
+            diagonalStartX--; diagonalStartY--;
         }
+
+        // Giocatore
+        moves = getScoresArray(matrix.getMainDiagonalAt(x, y), PLAYER_STATE);
+        int i = diagonalStartX, j = diagonalStartY;
         for (int k=0; k<moves.length; k++) {
-            setScore(diagonalLeftRightScore_player, i, j, moves[k]);
+            setScore(mainDiagonalScore_player, i, j, moves[k]);
             i++; j++;
         }
 
         // Avversario
-        moves = getScoresArray(matrix.getDiagonalLeftRightAt(x, y), OPPONENT_STATE);
-        i = x; j = y;
-        while(i > 0 && j > 0) {
-            i--; j--;
-        }
+        moves = getScoresArray(matrix.getMainDiagonalAt(x, y), OPPONENT_STATE);
+        i = diagonalStartX; j = diagonalStartY;
         for (int k=0; k<moves.length; k++) {
-            setScore(diagonalLeftRightScore_opponent, i, j, moves[k]);
+            setScore(mainDiagonalScore_opponent, i, j, moves[k]);
             i++; j++;
         }
     }
@@ -278,29 +276,28 @@ public class BoardStatus {
      * Riempie nella matrice degli Score delle diagonali secondarie, la diagonale contenente la cella nella posizione indicata
      * @implNote Costo:
      * */
-    private void fillDiagonalRightLeftScoreAt(int x, int y) {
-        if (diagonalRightLeftScore_player[x][y] != null && diagonalRightLeftScore_opponent[x][y] != null) { return; }
+    private void fillSecondaryDiagonalScoreAt(int x, int y) {
+        if (secondaryDiagonalScore_player[x][y] != null && secondaryDiagonalScore_opponent[x][y] != null) { return; }
         Score[] moves;
 
-        // Giocatore
-        moves = getScoresArray(matrix.getDiagonalRightLeftAt(x, y), PLAYER_STATE);
-        int i = x, j = y;
-        while (i < columns-1 && j > 0) {
-            i++; j--;
+        int diagonalStartX = x, diagonalStartY = y;
+        while (diagonalStartX < columns-1 && diagonalStartY > 0) {
+            diagonalStartX++; diagonalStartY--;
         }
+
+        // Giocatore
+        moves = getScoresArray(matrix.getSecondaryDiagonalAt(x, y), PLAYER_STATE);
+        int i = diagonalStartX, j = diagonalStartY;
         for (int k=0; k<moves.length; k++) {
-            setScore(diagonalRightLeftScore_player, i, j, moves[k]);
+            setScore(secondaryDiagonalScore_player, i, j, moves[k]);
             i--; j++;
         }
 
         // Avversario
-        moves = getScoresArray(matrix.getDiagonalRightLeftAt(x, y), OPPONENT_STATE);
-        i = x; j = y;
-        while (i < columns-1 && j > 0) {
-            i++; j--;
-        }
+        moves = getScoresArray(matrix.getSecondaryDiagonalAt(x, y), OPPONENT_STATE);
+        i = diagonalStartX; j = diagonalStartY;
         for (int k=0; k<moves.length; k++) {
-            setScore(diagonalRightLeftScore_opponent, i, j, moves[k]);
+            setScore(secondaryDiagonalScore_opponent, i, j, moves[k]);
             i--; j++;
         }
     }
@@ -312,24 +309,24 @@ public class BoardStatus {
     public void generateScoreAt(int x, int y) {
         fillRowScoreAt(x, y);
         fillColumnScoreAt(x, y);
-        fillDiagonalLeftRightScoreAt(x, y);
-        fillDiagonalRightLeftScoreAt(x, y);
+        fillMainDiagonalScoreAt(x, y);
+        fillSecondaryDiagonalScoreAt(x, y);
     }
 
     /**
      * Restituisce il numero minimo di mosse necessarie per vincere a partireda una determinata cella
-     * @param toCheckStatus Indica lo stato della cella che si vuole controllare (giocatore o avversario)
+     * @param toCheckState Indica lo stato della cella che si vuole controllare (giocatore o avversario)
      * @implNote Costo:
      * */
-    public int getMovesToWinAt(int x, int y, MNKCellState toCheckStatus) {
-        if (toCheckStatus == PLAYER_STATE) {
+    public int getMovesToWinAt(int x, int y, MNKCellState toCheckState) {
+        if (toCheckState == PLAYER_STATE) {
             return Math.min(
                 columnScore_player[x][y].moves,
                 Math.min(
                     rowScore_player[x][y].moves,
                     Math.min(
-                        diagonalLeftRightScore_player[x][y].moves,
-                        diagonalRightLeftScore_player[x][y].moves
+                        mainDiagonalScore_player[x][y].moves,
+                        secondaryDiagonalScore_player[x][y].moves
                     )
                 )
             );
@@ -340,68 +337,48 @@ public class BoardStatus {
                 Math.min(
                     rowScore_opponent[x][y].moves,
                     Math.min(
-                        diagonalLeftRightScore_opponent[x][y].moves,
-                        diagonalRightLeftScore_opponent[x][y].moves
+                        mainDiagonalScore_opponent[x][y].moves,
+                        secondaryDiagonalScore_opponent[x][y].moves
                     )
                 )
             );
         }
     }
 
-    public LinkedList<EvaluationPosition> getIntrestingAdjacencyAt(int x, int y) {
-        LinkedList<EvaluationPosition> out = new LinkedList<>();
-        Score[][] rowScore = matrix.getAt(x, y) == PLAYER_STATE ? rowScore_player : rowScore_opponent;
-        Score[][] columnScore = matrix.getAt(x, y) == PLAYER_STATE ? columnScore_player : columnScore_opponent;
-        Score[][] diagonalLeftRightScore = matrix.getAt(x, y) == PLAYER_STATE ? diagonalLeftRightScore_player : diagonalLeftRightScore_opponent;
-        Score[][] diagonalRightLeftScore = matrix.getAt(x, y) == PLAYER_STATE ? diagonalRightLeftScore_player : diagonalRightLeftScore_opponent;
+    public int getRowMovesToWinAt(int x, int y, MNKCellState toCheckState) {
+        if (toCheckState == PLAYER_STATE) {
+            return rowScore_player[x][y].moves;
+        }
+        else {
+            return rowScore_opponent[x][y].moves;
+        }
+    }
 
-        EvaluationPosition best = null;
+    public int getColumnMovesToWinAt(int x, int y, MNKCellState toCheckState) {
+        if (toCheckState == PLAYER_STATE) {
+            return columnScore_player[x][y].moves;
+        }
+        else {
+            return columnScore_opponent[x][y].moves;
+        }
+    }
 
-        // Riga
-        if (matrix.getAt(x-1, y) == MNKCellState.FREE) {
-            best = new EvaluationPosition(x-1, y, rowScore[x-1][y].moves);
+    public int getMainDiagonalMovesToWinAt(int x, int y, MNKCellState toCheckState) {
+        if (toCheckState == PLAYER_STATE) {
+            return mainDiagonalScore_player[x][y].moves;
         }
-        if (matrix.getAt(x+1, y) == MNKCellState.FREE) {
-            if (best == null || rowScore[x+1][y].moves < best.score) {
-                best = new EvaluationPosition(x+1, y, rowScore[x+1][y].moves);
-            }
+        else {
+            return mainDiagonalScore_opponent[x][y].moves;
         }
-        if (best != null) { out.add(best); }
+    }
 
-        // Colonna
-        if (matrix.getAt(x, y-1) == MNKCellState.FREE) {
-            best = new EvaluationPosition(x, y-1, columnScore[x][y-1].moves);
+    public int getSecondaryDiagonalMovesToWinAt(int x, int y, MNKCellState toCheckState) {
+        if (toCheckState == PLAYER_STATE) {
+            return secondaryDiagonalScore_player[x][y].moves;
         }
-        if (matrix.getAt(x, y+1) == MNKCellState.FREE) {
-            if (best == null || columnScore[x][y+1].moves < best.score) {
-                best = new EvaluationPosition(x, y+1, columnScore[x][y+1].moves);
-            }
+        else {
+            return secondaryDiagonalScore_opponent[x][y].moves;
         }
-        if (best != null) { out.add(best); }
-
-        // Diagonale principale
-        if (matrix.getAt(x-1, y-1) == MNKCellState.FREE) {
-            best = new EvaluationPosition(x-1, y-1, diagonalLeftRightScore[x-1][y-1].moves);
-        }
-        if (matrix.getAt(x+1, y+1) == MNKCellState.FREE) {
-            if (best == null || diagonalLeftRightScore[x+1][y+1].moves < best.score) {
-                best = new EvaluationPosition(x+1, y+1, diagonalLeftRightScore[x+1][y+1].moves);
-            }
-        }
-        if (best != null) { out.add(best); }
-
-        // Diagonale secondaria
-        if (matrix.getAt(x-1, y+1) == MNKCellState.FREE) {
-            best = new EvaluationPosition(x-1, y+1, diagonalRightLeftScore[x-1][y+1].moves);
-        }
-        if (matrix.getAt(x+1, y-1) == MNKCellState.FREE) {
-            if (best == null || diagonalRightLeftScore[x+1][y-1].moves < best.score) {
-                best = new EvaluationPosition(x+1, y-1, diagonalRightLeftScore[x+1][y-1].moves);
-            }
-        }
-        if (best != null) { out.add(best); }
-
-        return out;
     }
 
     public String toString() {
@@ -431,28 +408,5 @@ public class BoardStatus {
         else {
             return MNKGameState.OPEN;
         }
-    }
-
-    public static void main(String[] args) {
-        BoardStatus bs = new BoardStatus(5, 5, 4, MNKCellState.P1);
-
-        System.out.println(null == MNKCellState.FREE);
-
-        bs.setAt(0, 0, MNKCellState.P2);
-        bs.setAt(1, 0, MNKCellState.P2);
-        bs.setAt(2, 0, MNKCellState.P2);
-
-        bs.setAt(1, 1, MNKCellState.P1);
-        bs.setAt(2, 2, MNKCellState.P1);
-        bs.setAt(1, 3, MNKCellState.P1);
-
-        bs.generateScoreAt(3, 0);
-        System.out.println(bs.getMovesToWinAt(3, 0, MNKCellState.P1));
-        System.out.println(bs.getMovesToWinAt(3, 0, MNKCellState.P2));
-
-        /*bs.generateScore();
-        System.out.println(bs.getGlobalBestMovesToWin(MNKCellState.P1));
-        System.out.println(bs.getGlobalBestMovesToWin(MNKCellState.P2));*/
-
     }
 }

@@ -76,7 +76,7 @@ public class Matrix {
      * Restituisce un vettore contenente la configurazione dell'intera diagonale principale a cui appartiene la posizione in input
      * @implNote Costo: O(min{M, N})
      * */
-    public MNKCellState[] getDiagonalLeftRightAt(int start_x, int start_y) {
+    public MNKCellState[] getMainDiagonalAt(int start_x, int start_y) {
         LinkedList<MNKCellState> buffer = new LinkedList<>();
 
         int i = start_x, j = start_y;
@@ -99,7 +99,7 @@ public class Matrix {
      * Restituisce un vettore contenente la configurazione dell'intera diagonale secondaria a cui appartiene la posizione in input
      * @implNote Costo: O(min{M, N})
      * */
-    public MNKCellState[] getDiagonalRightLeftAt(int start_x, int start_y) {
+    public MNKCellState[] getSecondaryDiagonalAt(int start_x, int start_y) {
         LinkedList<MNKCellState> buffer = new LinkedList<>();
 
         int i = start_x, j = start_y;

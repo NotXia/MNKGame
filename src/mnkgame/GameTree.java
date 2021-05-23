@@ -15,10 +15,11 @@ public class GameTree {
     private boolean first;
     private final MNKCellState MY_STATE, OPPONENT_STATE;
     private final MNKGameState WIN_STATE, LOSS_STATE;
-    private int maxScore, minScore;
-    private int MAX_DEPTH;
-    private final int MIN_EVAL, SCORE_THRESHOLD;
     private final int WIN_SCORE, LOSS_SCORE, DRAW_SCORE;
+
+    private static int MAX_DEPTH = 6;
+    private static final int MIN_EVAL = 5;
+    public static final int SCORE_THRESHOLD = 2;
 
     public GameTree(int M, int N, int K, boolean first) {
         this.root = null;
@@ -31,13 +32,6 @@ public class GameTree {
         this.OPPONENT_STATE = first ? MNKCellState.P2 : MNKCellState.P1;
         this.WIN_STATE = first ? MNKGameState.WINP1 : MNKGameState.WINP2;
         this.LOSS_STATE = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
-
-        this.maxScore = M*N;
-        this.minScore = -(M*N);
-
-        this.MAX_DEPTH = 6;
-        this.MIN_EVAL = 5;
-        this.SCORE_THRESHOLD = 2;
 
         this.WIN_SCORE = target + 1;
         this.LOSS_SCORE = -target - 1;
@@ -63,8 +57,7 @@ public class GameTree {
             }
 
             if (myNode) {
-                eval = maxScore+1;
-
+                eval = Integer.MAX_VALUE;
                 for (Node child : node.children) {
                     eval = Math.min(eval, alphabeta(child, false, alpha, beta));
                     beta = Math.min(eval, beta);
@@ -73,7 +66,7 @@ public class GameTree {
                 }
             }
             else {
-                eval = minScore-1;
+                eval = Integer.MIN_VALUE;
                 for (Node child : node.children) {
                     eval = Math.max(eval, alphabeta(child, true, alpha, beta));
                     alpha = Math.max(eval, alpha);
@@ -106,14 +99,12 @@ public class GameTree {
     private void setHeuristicScoreOf(Node node, BoardStatus board) {
         int playerScore, opponentScore;
 
-        /*board.generateScore();
-        playerScore = board.getGlobalBestMovesToWin(MY_STATE);
-        opponentScore = board.getGlobalBestMovesToWin(OPPONENT_STATE);*/
-
         board.removeAt(node.action.j, node.action.i);
         board.generateScoreAt(node.action.j, node.action.i);
+
         playerScore = board.getMovesToWinAt(node.action.j, node.action.i, MY_STATE);
         opponentScore = board.getMovesToWinAt(node.action.j, node.action.i, OPPONENT_STATE);
+
         board.setAt(node.action.j, node.action.i, node.action.state);
 
         playerScore = target - playerScore;
@@ -127,60 +118,56 @@ public class GameTree {
         }
     }
 
-    /**
-     * Restituisce una Priority Queue di posizioni da visitare ordinate in base alla funzione euristica.
-     * @implNote Costo:
-     * */
-    /*public PriorityQueue<EvaluationPosition> getInterestingPositions(Node node, BoardStatus board) {
-        HashMap<String, Boolean> hasBeenEvaluated = new HashMap<>();
-        PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>();
+    public HashMap<Coord, Integer> setAdjacencyOf(Node node, BoardStatus board) {
+        HashMap<Coord, Integer> newAdjacency = new HashMap<>();
 
-        Node iter = node;
-        while (iter != null) {
-            MNKCell markedCell = iter.action;
-            int x = markedCell.j, y = markedCell.i;
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                if (i == 0 && j == 0) { continue; }
+                int toVisit_x = node.action.j + j;
+                int toVisit_y = node.action.i + i;
 
-            board.generateScoreAt(x, y);
-            for (EvaluationPosition position : board.getIntrestingAdjacencyAt(x, y)) {
-                if (hasBeenEvaluated.get(""+position.x+" "+position.y) == null) {
-                    moves.add( position );
-                    hasBeenEvaluated.put(""+position.x+" "+position.y, true);
+                if (isValidCell(toVisit_x, toVisit_y) && board.isFreeAt(toVisit_x, toVisit_y)) {
+                    board.generateScoreAt(toVisit_x, toVisit_y);
+
+                    int best = Math.min(board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE), board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE));
+                    node.adjacency.add( new EvaluationPosition(toVisit_x, toVisit_y, best) );
+
+                    newAdjacency.put( new Coord(toVisit_x, toVisit_y), best );
                 }
             }
-
-            iter = iter.parent;
         }
 
-        return moves;
-    }*/
-    public PriorityQueue<EvaluationPosition> getInterestingPositions(Node node, BoardStatus board) {
-        HashMap<String, Boolean> hasBeenEvaluated = new HashMap<>();
-        PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>();
+        return newAdjacency;
+    }
 
-        Node iter = node;
-        while (iter != null) {
-            MNKCell markedCell = iter.action;
+    public void getParentAdjacencyOf(Node node, BoardStatus board, HashMap<Coord, Integer> newAdjacency) {
+        Coord currCoord = new Coord(node.action.j, node.action.i);
 
-            for (int i = -1; i <= 1; i++) {
-                for (int j = -1; j <= 1; j++) {
-                    if (i == 0 && j == 0) { continue; }
-                    int toVisit_x = markedCell.j + j;
-                    int toVisit_y = markedCell.i + i;
+        for (EvaluationPosition position : node.parent.adjacency) {
+            Coord positionCoord = new Coord(position.x, position.y);
 
-                    if (isValidCell(toVisit_x, toVisit_y)) {
-                        if (board.isFreeAt(toVisit_x, toVisit_y) && hasBeenEvaluated.get(""+toVisit_x+" "+toVisit_y) == null) {
-                            board.generateScoreAt(toVisit_x, toVisit_y);
-                            int best = Math.min(board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE), board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE));
-                            moves.add( new EvaluationPosition(toVisit_x, toVisit_y, best) );
-                            hasBeenEvaluated.put(""+toVisit_x+" "+toVisit_y, true);
-                        }
-                    }
+            if (newAdjacency.get(positionCoord) == null && board.isFreeAt(position.x, position.y)) { // Le nuove adiacenze non collidono con quelle del padre
+                EvaluationPosition toAdd = new EvaluationPosition(position);
+                int updatedScore = toAdd.score;
+
+                if (currCoord.isOnTheSameRowOf(positionCoord)) {
+                    updatedScore = Math.min(board.getRowMovesToWinAt(position.x, position.y, MY_STATE), board.getRowMovesToWinAt(position.x, position.y, OPPONENT_STATE));
                 }
-            }
-            iter = iter.parent;
-        }
+                else if (currCoord.isOnTheSameColumnOf(positionCoord)) {
+                    updatedScore = Math.min(board.getColumnMovesToWinAt(position.x, position.y, MY_STATE), board.getColumnMovesToWinAt(position.x, position.y, OPPONENT_STATE));
+                }
+                else if (currCoord.isOnTheSameMainDiagonalOf(positionCoord)) {
+                    updatedScore = Math.min(board.getMainDiagonalMovesToWinAt(position.x, position.y, MY_STATE), board.getMainDiagonalMovesToWinAt(position.x, position.y, OPPONENT_STATE));
+                }
+                else if (currCoord.isOnTheSameSecondaryDiagonalOf(positionCoord)) {
+                    updatedScore = Math.min(board.getSecondaryDiagonalMovesToWinAt(position.x, position.y, MY_STATE), board.getSecondaryDiagonalMovesToWinAt(position.x, position.y, OPPONENT_STATE));
+                }
 
-        return moves;
+                toAdd.score = Math.min(toAdd.score, updatedScore);
+                node.adjacency.add(toAdd);
+            }
+        }
     }
 
     /**
@@ -201,7 +188,15 @@ public class GameTree {
             setHeuristicScoreOf(toEval, board);
         }
         else {
-            PriorityQueue<EvaluationPosition> moves = getInterestingPositions(toEval, board);
+            HashMap<Coord, Integer> newAdjacency = setAdjacencyOf(toEval, board);
+            if (toEval.parent != null) {
+                getParentAdjacencyOf(toEval, board, newAdjacency);
+            }
+
+            PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>();
+            for (EvaluationPosition position : toEval.adjacency) {
+                moves.add(position);
+            }
 
             int i=0;
             while (moves.size() > 0) {
@@ -287,9 +282,9 @@ public class GameTree {
         }
 
         if (bestChild == null) {
-            Node new_root = new Node(this.root, move);
+            Node new_root = new Node(root, move);
             root.setSelectedChild(new_root);
-            this.root = new_root;
+            root = new_root;
             extendNode(this.root, MAX_DEPTH);
             alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
         }
@@ -297,7 +292,7 @@ public class GameTree {
             root.setSelectedChild(bestChild);
             root = bestChild;
             extendLeaves(root);
-            alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+            alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
         }
 
     }
@@ -321,20 +316,8 @@ public class GameTree {
         root.setSelectedChild(nextChild);
         root = nextChild;
 
-        if (false) {
-            if (root.score == 0) {
-                System.out.println(root.action + " | Gita in SVIZZERA " + root.score);
-            }
-            else if (root.score > 0) {
-                System.out.println(root.action + " | Verso la VITTORIA " + root.score);
-            }
-            else {
-                System.out.println(root.action + " | Sulla strada verso la DISFATTA " + root.score);
-            }
-        }
-
         extendLeaves(root);
-        alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+        alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
         return root.action;
     }
 }
