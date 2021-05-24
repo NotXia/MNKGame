@@ -208,6 +208,7 @@ public class MNKPlayerTesterChallenge {
 		}
 
 		LinkedList<String> matches = new LinkedList<>();
+		matches.addLast( String.format("%12s\t%30s\t%30s\t%10s\t%10s\t[%s]", "CONFIGURAZIONE", "PRIMO GIOCATORE", "SECONDO GIOCATORE", "ESITO", "ESITO", "RISULTATO ATTESO") );
 
 		for (int i=0; i<configs.length; i++) {
 			int[] config = configs[i];
@@ -273,20 +274,14 @@ public class MNKPlayerTesterChallenge {
 						if (state == GameState.DRAW) {
 							res = "DRAW";
 						} else if (firstPlayer == "mnkgame.OurPlayer") {
-							if (state == GameState.WINP1) {
-								res = "WIN";
-							} else {
-								res = "LOSS";
-							}
+							if (state == GameState.WINP1) { res = "WIN"; }
+							else { res = "> LOSS <"; }
 						} else {
-							if (state == GameState.WINP2) {
-								res = "WIN";
-							} else {
-								res = "LOSS";
-							}
+							if (state == GameState.WINP2) { res = "WIN"; }
+							else { res = "> LOSS <"; }
 						}
 					}
-					matches.addLast( String.format("(%d %d %d)\t%30s\t%30s\t%10s\t%10s\t(%s)", M, N, K, firstPlayer, secondPlayer, ""+state, res, expectedResult[i]) );
+					matches.addLast( String.format("%12s\t%30s\t%30s\t%10s\t%10s\t[%s]", String.format("(%d %d %d)", M, N, K), firstPlayer, secondPlayer, ""+state, res, expectedResult[i]) );
 
 					System.out.println("Game state: " + state);
 					System.out.println("-------------------------");
