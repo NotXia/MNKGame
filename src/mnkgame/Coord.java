@@ -42,4 +42,8 @@ public class Coord {
     public boolean isOnTheSameSecondaryDiagonalOf(Coord c) {
         return (this.x - c.x) == -(this.y - c.y);
     }
+
+    public double distance(Coord c) {
+        return Math.sqrt(Math.pow(Math.abs(x-c.x), 2) + Math.pow(Math.abs(y-c.y), 2));
+    }
 }

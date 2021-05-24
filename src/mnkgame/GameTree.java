@@ -1,6 +1,7 @@
 package mnkgame;
 import java.util.HashMap;
 
+import java.util.LinkedList;
 import java.util.PriorityQueue;
 
 /**
@@ -20,6 +21,7 @@ public class GameTree {
     private static int MAX_DEPTH = 6;
     private static final int MIN_EVAL = 5;
     public static final int SCORE_THRESHOLD = 2;
+
 
     public GameTree(int M, int N, int K, boolean first) {
         this.root = null;
@@ -99,13 +101,13 @@ public class GameTree {
     private void setHeuristicScoreOf(Node node, BoardStatus board) {
         int playerScore, opponentScore;
 
-        board.removeAt(node.action.j, node.action.i);
-        board.generateScoreAt(node.action.j, node.action.i);
+        //board.removeAt(node.action.j, node.action.i);
 
+        board.generateScoreAt(node.action.j, node.action.i);
         playerScore = board.getMovesToWinAt(node.action.j, node.action.i, MY_STATE);
         opponentScore = board.getMovesToWinAt(node.action.j, node.action.i, OPPONENT_STATE);
 
-        board.setAt(node.action.j, node.action.i, node.action.state);
+        //board.setAt(node.action.j, node.action.i, node.action.state);
 
         playerScore = target - playerScore;
         opponentScore = target - opponentScore;
@@ -118,8 +120,8 @@ public class GameTree {
         }
     }
 
-    public HashMap<Coord, Integer> setAdjacencyOf(Node node, BoardStatus board) {
-        HashMap<Coord, Integer> newAdjacency = new HashMap<>();
+    public HashMap<Coord, EvaluationPosition> setAdjacencyOf(Node node, BoardStatus board) {
+        HashMap<Coord, EvaluationPosition> newAdjacency = new HashMap<>();
 
         for (int i = -1; i <= 1; i++) {
             for (int j = -1; j <= 1; j++) {
@@ -130,10 +132,18 @@ public class GameTree {
                 if (isValidCell(toVisit_x, toVisit_y) && board.isFreeAt(toVisit_x, toVisit_y)) {
                     board.generateScoreAt(toVisit_x, toVisit_y);
 
-                    int best = Math.min(board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE), board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE));
-                    node.adjacency.add( new EvaluationPosition(toVisit_x, toVisit_y, best) );
+                    int playerScore = board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE);
+                    int opponentScore = board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE);
+                    EvaluationPosition adjacency;
 
-                    newAdjacency.put( new Coord(toVisit_x, toVisit_y), best );
+                    if (playerScore < opponentScore) {
+                        adjacency = new EvaluationPosition(toVisit_x, toVisit_y, playerScore, MY_STATE, 1);
+                    }
+                    else {
+                        adjacency = new EvaluationPosition(toVisit_x, toVisit_y, opponentScore, OPPONENT_STATE, 1);
+                    }
+                    node.adjacency.add( adjacency );
+                    newAdjacency.put( new Coord(toVisit_x, toVisit_y), adjacency );
                 }
             }
         }
@@ -141,31 +151,56 @@ public class GameTree {
         return newAdjacency;
     }
 
-    public void getParentAdjacencyOf(Node node, BoardStatus board, HashMap<Coord, Integer> newAdjacency) {
+    public void getParentAdjacencyOf(Node node, BoardStatus board, HashMap<Coord, EvaluationPosition> newAdjacency) {
         Coord currCoord = new Coord(node.action.j, node.action.i);
 
         for (EvaluationPosition position : node.parent.adjacency) {
             Coord positionCoord = new Coord(position.x, position.y);
 
-            if (newAdjacency.get(positionCoord) == null && board.isFreeAt(position.x, position.y)) { // Le nuove adiacenze non collidono con quelle del padre
-                EvaluationPosition toAdd = new EvaluationPosition(position);
-                int updatedScore = toAdd.score;
+            if (board.isFreeAt(position.x, position.y)) {
+                if (newAdjacency.get(positionCoord) == null) { // Le nuove adiacenze non collidono con quelle del padre
+                    EvaluationPosition toAdd = new EvaluationPosition(position);
+                    int updatedScore = toAdd.score, updatedFrequency = toAdd.frequency;
+                    MNKCellState updatedState = toAdd.state;
+                    int playerScore, opponentScore;
 
-                if (currCoord.isOnTheSameRowOf(positionCoord)) {
-                    updatedScore = Math.min(board.getRowMovesToWinAt(position.x, position.y, MY_STATE), board.getRowMovesToWinAt(position.x, position.y, OPPONENT_STATE));
-                }
-                else if (currCoord.isOnTheSameColumnOf(positionCoord)) {
-                    updatedScore = Math.min(board.getColumnMovesToWinAt(position.x, position.y, MY_STATE), board.getColumnMovesToWinAt(position.x, position.y, OPPONENT_STATE));
-                }
-                else if (currCoord.isOnTheSameMainDiagonalOf(positionCoord)) {
-                    updatedScore = Math.min(board.getMainDiagonalMovesToWinAt(position.x, position.y, MY_STATE), board.getMainDiagonalMovesToWinAt(position.x, position.y, OPPONENT_STATE));
-                }
-                else if (currCoord.isOnTheSameSecondaryDiagonalOf(positionCoord)) {
-                    updatedScore = Math.min(board.getSecondaryDiagonalMovesToWinAt(position.x, position.y, MY_STATE), board.getSecondaryDiagonalMovesToWinAt(position.x, position.y, OPPONENT_STATE));
-                }
+                    if (currCoord.isOnTheSameRowOf(positionCoord) && currCoord.distance(positionCoord) < target) {
+                        playerScore = board.getRowMovesToWinAt(position.x, position.y, MY_STATE);
+                        opponentScore = board.getRowMovesToWinAt(position.x, position.y, OPPONENT_STATE);
+                        updatedScore = Math.min(playerScore, opponentScore);
+                        updatedState = playerScore < opponentScore ? MY_STATE : OPPONENT_STATE;
+                        updatedFrequency = updatedFrequency + 1;
+                    } else if (currCoord.isOnTheSameColumnOf(positionCoord) && currCoord.distance(positionCoord) < target) {
+                        playerScore = board.getColumnMovesToWinAt(position.x, position.y, MY_STATE);
+                        opponentScore = board.getColumnMovesToWinAt(position.x, position.y, OPPONENT_STATE);
+                        updatedScore = Math.min(playerScore, opponentScore);
+                        updatedState = playerScore < opponentScore ? MY_STATE : OPPONENT_STATE;
+                        updatedFrequency = updatedFrequency + 1;
+                    } else if (currCoord.isOnTheSameMainDiagonalOf(positionCoord) && currCoord.distance(positionCoord) < target) {
+                        playerScore = board.getMainDiagonalMovesToWinAt(position.x, position.y, MY_STATE);
+                        opponentScore = board.getMainDiagonalMovesToWinAt(position.x, position.y, OPPONENT_STATE);
+                        updatedScore = Math.min(playerScore, opponentScore);
+                        updatedState = playerScore < opponentScore ? MY_STATE : OPPONENT_STATE;
+                        updatedFrequency = updatedFrequency + 1;
+                    } else if (currCoord.isOnTheSameSecondaryDiagonalOf(positionCoord) && currCoord.distance(positionCoord) < target) {
+                        playerScore = board.getSecondaryDiagonalMovesToWinAt(position.x, position.y, MY_STATE);
+                        opponentScore = board.getSecondaryDiagonalMovesToWinAt(position.x, position.y, OPPONENT_STATE);
+                        updatedScore = Math.min(playerScore, opponentScore);
+                        updatedState = playerScore < opponentScore ? MY_STATE : OPPONENT_STATE;
+                        updatedFrequency = updatedFrequency + 1;
+                    }
 
-                toAdd.score = Math.min(toAdd.score, updatedScore);
-                node.adjacency.add(toAdd);
+                    if (updatedScore <= toAdd.score) {
+                        toAdd.score = updatedScore;
+                        toAdd.state = updatedState;
+                        toAdd.frequency = updatedFrequency;
+                    }
+                    node.adjacency.add(toAdd);
+                } else {
+                    if (position.score <= SCORE_THRESHOLD) {
+                        newAdjacency.get(positionCoord).frequency = position.frequency + 1; // Aggiorna la frequenza se collide con quella del padre
+                    }
+                }
             }
         }
     }
@@ -184,23 +219,25 @@ public class GameTree {
             setScoreOf(toEval, gameState);
             toEval.endState = true;
         }
-        else if (depth == 0) {
+        else if (depth <= 0) {
             setHeuristicScoreOf(toEval, board);
         }
         else {
-            HashMap<Coord, Integer> newAdjacency = setAdjacencyOf(toEval, board);
+            HashMap<Coord, EvaluationPosition> newAdjacency = setAdjacencyOf(toEval, board);
             if (toEval.parent != null) {
                 getParentAdjacencyOf(toEval, board, newAdjacency);
             }
+
 
             PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>();
             for (EvaluationPosition position : toEval.adjacency) {
                 moves.add(position);
             }
 
+            int prevScore = moves.peek().score;
             int i=0;
             while (moves.size() > 0) {
-                if (i >= MIN_EVAL && moves.peek().score > SCORE_THRESHOLD) { break; }
+                if (moves.peek().score != prevScore || i>=8) { break; }
 
                 EvaluationPosition toVisit = moves.poll();
                 int toVisit_x = toVisit.x;
@@ -216,6 +253,58 @@ public class GameTree {
                 board.removeAt(toVisit_x, toVisit_y);
                 i++;
             }
+
+
+            /*PriorityQueue<EvaluationPosition> myMoves = new PriorityQueue<>();
+            PriorityQueue<EvaluationPosition> opponentMoves = new PriorityQueue<>();
+            for (EvaluationPosition position : toEval.adjacency) {
+                if (position.state == MY_STATE) {
+                    myMoves.add(position);
+                }
+                else {
+                    opponentMoves.add(position);
+                }
+            }
+
+            int i=0;
+            while (opponentMoves.size() > 0) {
+                //if ( i >= MIN_EVAL && (moves.peek().score > SCORE_THRESHOLD || (moves.peek().score <= SCORE_THRESHOLD && moves.peek().frequency < 3)) ) { break; }
+                if ( i >= 5 && opponentMoves.peek().score > SCORE_THRESHOLD || i >= 7) { break; }
+
+                EvaluationPosition toVisit = opponentMoves.poll();
+                int toVisit_x = toVisit.x;
+                int toVisit_y = toVisit.y;
+
+                MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
+
+                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
+                Node child = new Node(toEval, toEvalCell);
+
+                board.setAt(toVisit_x, toVisit_y, state);
+                toEval.children.add( createTree(child, !mePlaying, depth-1, board) );
+                board.removeAt(toVisit_x, toVisit_y);
+                i++;
+            }
+
+            boolean posso = true;
+            while (myMoves.size() > 0) {
+                if ( i >= MIN_EVAL && !posso) { break; }
+                posso = false;
+
+                EvaluationPosition toVisit = myMoves.poll();
+                int toVisit_x = toVisit.x;
+                int toVisit_y = toVisit.y;
+
+                MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
+
+                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
+                Node child = new Node(toEval, toEvalCell);
+
+                board.setAt(toVisit_x, toVisit_y, state);
+                toEval.children.add( createTree(child, !mePlaying, depth-1, board) );
+                board.removeAt(toVisit_x, toVisit_y);
+                i++;
+            }*/
         }
 
         return toEval;

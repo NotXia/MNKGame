@@ -195,6 +195,11 @@ public class MNKPlayerTesterChallenge {
 			new int[]{7, 7, 5}, new int[]{7, 7, 6}, new int[]{7, 7, 7}, new int[]{8, 8, 4}, new int[]{10, 10, 5}, new int[]{50, 50, 10}, new int[]{70, 70, 10}
 		};
 
+		String[] expectedResult = new String[] {
+			"DRAW", "WINP1", "WINP1", "DRAW", "DRAW", "DRAW", "DRAW", "DRAW", "WINP1", "WINP1", "DRAW", "DRAW", "DRAW", "WINP1", "WINP1",
+				"WINP1", "DRAW", "DRAW", "DRAW", "DRAW", "?", "WINP1", "?", "?", "?"
+		};
+
 		LinkedList<String[]> challenges = new LinkedList<>();
 		for (int i=0; i<players.length; i++) {
 			for (int j=i+1; j<players.length; j++) {
@@ -234,8 +239,6 @@ public class MNKPlayerTesterChallenge {
 					initGame();
 					GameState state = runGame();
 
-					matches.addLast( String.format("(%d %d %d)\t%30s\t%30s\t%10s", M, N, K, firstPlayer, secondPlayer, ""+state) );
-
 					switch(state) {
 						case WINP1:
 							scores.put(firstPlayer, scores.get(firstPlayer)+WINP1SCORE);
@@ -264,6 +267,27 @@ public class MNKPlayerTesterChallenge {
 							kda.put(secondPlayer, new Integer[]{kda.get(secondPlayer)[WIN], kda.get(secondPlayer)[LOSS], kda.get(secondPlayer)[DRAW]+1});
 							break;
 					}
+
+					String res = "";
+					if (firstPlayer == "mnkgame.OurPlayer" || secondPlayer == "mnkgame.OurPlayer") {
+						if (state == GameState.DRAW) {
+							res = "DRAW";
+						} else if (firstPlayer == "mnkgame.OurPlayer") {
+							if (state == GameState.WINP1) {
+								res = "WIN";
+							} else {
+								res = "LOSS";
+							}
+						} else {
+							if (state == GameState.WINP2) {
+								res = "WIN";
+							} else {
+								res = "LOSS";
+							}
+						}
+					}
+					matches.addLast( String.format("(%d %d %d)\t%30s\t%30s\t%10s\t%10s\t(%s)", M, N, K, firstPlayer, secondPlayer, ""+state, res, expectedResult[i]) );
+
 					System.out.println("Game state: " + state);
 					System.out.println("-------------------------");
 					System.out.println();
