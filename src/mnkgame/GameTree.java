@@ -1,4 +1,5 @@
 package mnkgame;
+import javax.swing.text.Position;
 import java.util.HashMap;
 
 import java.util.LinkedList;
@@ -18,7 +19,7 @@ public class GameTree {
     private final MNKGameState WIN_STATE, LOSS_STATE;
     private final int WIN_SCORE, LOSS_SCORE, DRAW_SCORE;
 
-    private static int MAX_DEPTH = 6;
+    private static int MAX_DEPTH = 7;
     private static final int MIN_EVAL = 5;
     public static final int SCORE_THRESHOLD = 2;
 
@@ -35,8 +36,8 @@ public class GameTree {
         this.WIN_STATE = first ? MNKGameState.WINP1 : MNKGameState.WINP2;
         this.LOSS_STATE = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
 
-        this.WIN_SCORE = target + 1;
-        this.LOSS_SCORE = -target - 1;
+        this.WIN_SCORE = 100000;
+        this.LOSS_SCORE = -100000;
         this.DRAW_SCORE = 0;
     }
 
@@ -54,9 +55,7 @@ public class GameTree {
         }
         else {
             int eval;
-            for (Node child : node.children) {
-                child.alphabeta = false;
-            }
+            for (Node child : node.children) { child.alphabeta = false; }
 
             if (myNode) {
                 eval = Integer.MAX_VALUE;
@@ -98,111 +97,228 @@ public class GameTree {
         }
     }
 
-    private void setHeuristicScoreOf(Node node, BoardStatus board) {
-        int playerScore, opponentScore;
+    private void setHeuristicScoreOf(Node node, BoardStatus board, MNKCellState whoHasToPlaying) {
+        int playerScore=0, opponentScore=0;
 
-        //board.removeAt(node.action.j, node.action.i);
-
-        board.generateScoreAt(node.action.j, node.action.i);
+        /*board.removeAt(node.action.j, node.action.i);
+        board.generateMovesToWinAt(node.action.j, node.action.i);
         playerScore = board.getMovesToWinAt(node.action.j, node.action.i, MY_STATE);
         opponentScore = board.getMovesToWinAt(node.action.j, node.action.i, OPPONENT_STATE);
-
-        //board.setAt(node.action.j, node.action.i, node.action.state);
+        board.setAt(node.action.j, node.action.i, node.action.state);
 
         playerScore = target - playerScore;
-        opponentScore = target - opponentScore;
+        opponentScore = target - opponentScore;*/
 
-        if (playerScore > opponentScore) {
+        /*board.generateGlobalMovesToWin();
+        playerScore = target - board.getGlobalScoreOf(MY_STATE);
+        opponentScore = target - board.getGlobalScoreOf(OPPONENT_STATE);
+
+        //node.score = playerScore - opponentScore;
+
+        if (playerScore == target-1 && whoHasToPlaying == MY_STATE) {
+            node.score = WIN_SCORE;
+        }
+        else if (opponentScore == target-1 && whoHasToPlaying == OPPONENT_STATE) {
+            node.score = LOSS_SCORE;
+        }
+
+        else if (playerScore > opponentScore) {
             node.score = playerScore;
         }
-        else {
+        else if (playerScore < opponentScore) {
             node.score = -opponentScore;
         }
-    }
+        else if (whoHasToPlaying == MY_STATE) {
+            node.score = -opponentScore;
+        }
+        else {
+            node.score = playerScore;
+        }*/
 
-    public HashMap<Coord, EvaluationPosition> setAdjacencyOf(Node node, BoardStatus board) {
-        HashMap<Coord, EvaluationPosition> newAdjacency = new HashMap<>();
+        board.generateGlobalMovesToWin();
+        int[] playerPossibilities = board.getAllPossibleWinningScenariosCount(MY_STATE);
+        int[] opponentPossibilities = board.getAllPossibleWinningScenariosCount(OPPONENT_STATE);
 
-        for (int i = -1; i <= 1; i++) {
-            for (int j = -1; j <= 1; j++) {
-                if (i == 0 && j == 0) { continue; }
-                int toVisit_x = node.action.j + j;
-                int toVisit_y = node.action.i + i;
-
-                if (isValidCell(toVisit_x, toVisit_y) && board.isFreeAt(toVisit_x, toVisit_y)) {
-                    board.generateScoreAt(toVisit_x, toVisit_y);
-
-                    int playerScore = board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE);
-                    int opponentScore = board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE);
-                    EvaluationPosition adjacency;
-
-                    if (playerScore < opponentScore) {
-                        adjacency = new EvaluationPosition(toVisit_x, toVisit_y, playerScore, MY_STATE, 1);
-                    }
-                    else {
-                        adjacency = new EvaluationPosition(toVisit_x, toVisit_y, opponentScore, OPPONENT_STATE, 1);
-                    }
-                    node.adjacency.add( adjacency );
-                    newAdjacency.put( new Coord(toVisit_x, toVisit_y), adjacency );
-                }
-            }
+        int weight = 100;
+        for (int i=1; i<=3 && i<playerPossibilities.length; i++) {
+            playerScore += playerPossibilities[i] * weight;
+            opponentScore += opponentPossibilities[i] * weight;
+            weight = weight / 10;
         }
 
-        return newAdjacency;
+        /*System.out.println(board);
+        for (int i=1; i<playerPossibilities.length; i++) {
+            System.out.print("[" + i + ") " + playerPossibilities[i] + "] ");
+        }
+        System.out.println();
+        for (int i=1; i<playerPossibilities.length; i++) {
+            System.out.print("[" + i + ") " + opponentPossibilities[i] + "] ");
+        }
+        System.out.println();
+        System.out.println(playerScore + " " + opponentScore);
+        System.out.println();*/
+
+        if (board.getGlobalScoreOf(MY_STATE) == target-1 && whoHasToPlaying == MY_STATE) {
+            node.score = WIN_SCORE;
+        }
+        else if (board.getGlobalScoreOf(OPPONENT_STATE) == target-1 && whoHasToPlaying == OPPONENT_STATE) {
+            node.score = LOSS_SCORE;
+        }
+        else if (playerScore == 0 && opponentScore == 0) {
+            node.score = DRAW_SCORE;
+        }
+        else {
+            node.score = playerScore - opponentScore;
+
+            /*if (playerScore > opponentScore) {
+                node.score = playerScore;
+            }
+            else {
+                node.score = -opponentScore;
+            }*/
+        }
+
+        /*else if (playerScore > opponentScore) {
+            node.score = playerScore;
+        }
+        else if (playerScore < opponentScore) {
+            node.score = -opponentScore;
+        }
+        else if (whoHasToPlaying == MY_STATE) {
+            node.score = -opponentScore;
+        }
+        else {
+            node.score = playerScore;
+        }*/
+
+/*        System.out.println(board);
+        System.out.println(node.score + " " + whoHasToPlaying + " " + node.action);
+        System.out.println();*/
+
+        /*if (playerScore > opponentScore) {
+            node.score = playerScore;
+        }
+        else if (playerScore < opponentScore) {
+            node.score = -opponentScore;
+        }
+        else if (playerScore < target/2) {
+            node.score = 0;
+        }
+        else if (state == MY_STATE) {
+            node.score = -opponentScore;
+        }
+        else {
+            node.score = playerScore;
+        }*/
     }
 
-    public void getParentAdjacencyOf(Node node, BoardStatus board, HashMap<Coord, EvaluationPosition> newAdjacency) {
-        Coord currCoord = new Coord(node.action.j, node.action.i);
+    public PriorityQueue<PositionEstimation> getAdj(Node node, BoardStatus board, MNKCellState state) {
+        HashMap<Coord, PositionEstimation> hm = new HashMap<>();
+        PriorityQueue<PositionEstimation> out = new PriorityQueue<>();
 
-        for (EvaluationPosition position : node.parent.adjacency) {
-            Coord positionCoord = new Coord(position.x, position.y);
+        Node iter = node;
 
-            if (board.isFreeAt(position.x, position.y)) {
-                if (newAdjacency.get(positionCoord) == null) { // Le nuove adiacenze non collidono con quelle del padre
-                    EvaluationPosition toAdd = new EvaluationPosition(position);
-                    int updatedScore = toAdd.score, updatedFrequency = toAdd.frequency;
-                    MNKCellState updatedState = toAdd.state;
-                    int playerScore, opponentScore;
+        while (iter != null) {
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    if (i == 0 && j == 0) { continue; }
 
-                    if (currCoord.isOnTheSameRowOf(positionCoord) && currCoord.distance(positionCoord) < target) {
-                        playerScore = board.getRowMovesToWinAt(position.x, position.y, MY_STATE);
-                        opponentScore = board.getRowMovesToWinAt(position.x, position.y, OPPONENT_STATE);
-                        updatedScore = Math.min(playerScore, opponentScore);
-                        updatedState = playerScore < opponentScore ? MY_STATE : OPPONENT_STATE;
-                        updatedFrequency = updatedFrequency + 1;
-                    } else if (currCoord.isOnTheSameColumnOf(positionCoord) && currCoord.distance(positionCoord) < target) {
-                        playerScore = board.getColumnMovesToWinAt(position.x, position.y, MY_STATE);
-                        opponentScore = board.getColumnMovesToWinAt(position.x, position.y, OPPONENT_STATE);
-                        updatedScore = Math.min(playerScore, opponentScore);
-                        updatedState = playerScore < opponentScore ? MY_STATE : OPPONENT_STATE;
-                        updatedFrequency = updatedFrequency + 1;
-                    } else if (currCoord.isOnTheSameMainDiagonalOf(positionCoord) && currCoord.distance(positionCoord) < target) {
-                        playerScore = board.getMainDiagonalMovesToWinAt(position.x, position.y, MY_STATE);
-                        opponentScore = board.getMainDiagonalMovesToWinAt(position.x, position.y, OPPONENT_STATE);
-                        updatedScore = Math.min(playerScore, opponentScore);
-                        updatedState = playerScore < opponentScore ? MY_STATE : OPPONENT_STATE;
-                        updatedFrequency = updatedFrequency + 1;
-                    } else if (currCoord.isOnTheSameSecondaryDiagonalOf(positionCoord) && currCoord.distance(positionCoord) < target) {
-                        playerScore = board.getSecondaryDiagonalMovesToWinAt(position.x, position.y, MY_STATE);
-                        opponentScore = board.getSecondaryDiagonalMovesToWinAt(position.x, position.y, OPPONENT_STATE);
-                        updatedScore = Math.min(playerScore, opponentScore);
-                        updatedState = playerScore < opponentScore ? MY_STATE : OPPONENT_STATE;
-                        updatedFrequency = updatedFrequency + 1;
-                    }
+                    int toVisit_x = iter.action.j + j;
+                    int toVisit_y = iter.action.i + i;
+                    boolean isDiagonal = (i!=0 && j!=0);
 
-                    if (updatedScore <= toAdd.score) {
-                        toAdd.score = updatedScore;
-                        toAdd.state = updatedState;
-                        toAdd.frequency = updatedFrequency;
-                    }
-                    node.adjacency.add(toAdd);
-                } else {
-                    if (position.score <= SCORE_THRESHOLD) {
-                        newAdjacency.get(positionCoord).frequency = position.frequency + 1; // Aggiorna la frequenza se collide con quella del padre
+                    Coord currCoord = new Coord(toVisit_x, toVisit_y);
+
+                    if (isValidCell(toVisit_x, toVisit_y) && board.isFreeAt(toVisit_x, toVisit_y) && hm.get(currCoord) == null) {
+                        int score = 0;
+                        int beforePlayerScore, beforeOpponentScore;
+                        int afterPlayerScore, afterOpponentScore;
+                        int aligned = 0, blocked = 0;
+                        int beforePlayerOpenDirections, beforeOpponentOpenDirections;
+                        int afterPlayerOpenDirections, afterOpponentOpenDirections;
+                        int closedDirections = 0;
+
+                        board.generateMovesToWinAt(toVisit_x, toVisit_y);
+                        beforePlayerScore = board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE);
+                        beforeOpponentScore = board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE);
+                        beforePlayerOpenDirections = board.numberOfOpenDirectionsAt(toVisit_x, toVisit_y, MY_STATE);
+                        beforeOpponentOpenDirections = board.numberOfOpenDirectionsAt(toVisit_x, toVisit_y, OPPONENT_STATE);
+
+                        board.setAt(toVisit_x, toVisit_y, state);
+                        board.generateMovesToWinAt(toVisit_x, toVisit_y);
+                        afterPlayerScore = board.getMovesToWinAt(toVisit_x, toVisit_y, MY_STATE);
+                        afterOpponentScore = board.getMovesToWinAt(toVisit_x, toVisit_y, OPPONENT_STATE);
+                        afterPlayerOpenDirections = board.numberOfOpenDirectionsAt(toVisit_x, toVisit_y, MY_STATE);
+                        afterOpponentOpenDirections = board.numberOfOpenDirectionsAt(toVisit_x, toVisit_y, OPPONENT_STATE);
+
+                        /*int playerScore=0, opponentScore=0;
+                        board.generateGlobalMovesToWin();
+                        int[] playerPossibilities = board.getAllPossibleWinningScenariosCount(MY_STATE);
+                        int[] opponentPossibilities = board.getAllPossibleWinningScenariosCount(OPPONENT_STATE);
+                        int weight = 100;
+                        for (int k=1; k<=3 && k<playerPossibilities.length; k++) {
+                            playerScore += playerPossibilities[k] * weight;
+                            opponentScore += opponentPossibilities[k] * weight;
+                            weight = weight / 10;
+                        }*/
+
+                        if (state == MY_STATE) {
+                            if (afterPlayerScore == 0) { score = WIN_SCORE; }
+                            else if (beforeOpponentScore == 1) { score = WIN_SCORE; }
+                            //else if (playerScore == 0 && opponentScore == 0) { score = DRAW_SCORE; }
+                            else {
+                                aligned = target - afterPlayerScore;
+                                blocked = target - beforeOpponentScore;
+                                //score = Math.abs(beforePlayerScore - afterPlayerScore) + Math.abs(target - beforeOpponentScore);
+
+                                /*if (playerScore > opponentScore) {
+                                    score = playerScore;
+                                }
+                                else {
+                                    score = -opponentScore;
+                                }*/
+
+
+                                score = aligned+blocked;
+                                closedDirections = beforeOpponentOpenDirections - afterOpponentOpenDirections;
+                            }
+
+                        }
+                        else {
+                            if (afterOpponentScore == 0) { score = WIN_SCORE; }
+                            else if (beforePlayerScore == 1) { score = WIN_SCORE; }
+                            //else if (playerScore == 0 && opponentScore == 0) { score = DRAW_SCORE; }
+                            else {
+                                aligned = target - afterOpponentScore;
+                                blocked = target - beforePlayerScore;
+                                //score = Math.abs(beforeOpponentScore - afterOpponentScore) + Math.abs(target - beforePlayerScore);
+
+                                /*if (opponentScore > playerScore) {
+                                    score = opponentScore;
+                                }
+                                else {
+                                    score = -playerScore;
+                                }*/
+
+                                score = aligned+blocked;
+                                closedDirections = beforePlayerOpenDirections - afterPlayerOpenDirections;
+                            }
+                        }
+                        board.removeAt(toVisit_x, toVisit_y);
+
+                        hm.put(currCoord, new PositionEstimation(toVisit_x, toVisit_y, score, aligned, blocked, closedDirections,  isDiagonal));
                     }
                 }
             }
+            iter = iter.parent;
         }
+
+
+        for (PositionEstimation ev : hm.values()) {
+            out.add(ev);
+        }
+
+        return out;
     }
 
     /**
@@ -220,26 +336,31 @@ public class GameTree {
             toEval.endState = true;
         }
         else if (depth <= 0) {
-            setHeuristicScoreOf(toEval, board);
+            setHeuristicScoreOf(toEval, board, mePlaying ? MY_STATE : OPPONENT_STATE);
         }
         else {
-            HashMap<Coord, EvaluationPosition> newAdjacency = setAdjacencyOf(toEval, board);
-            if (toEval.parent != null) {
-                getParentAdjacencyOf(toEval, board, newAdjacency);
-            }
+            LinkedList<PositionEstimation> list = new LinkedList<>();
+            PriorityQueue<PositionEstimation> moves = getAdj(toEval, board, mePlaying ? MY_STATE : OPPONENT_STATE);
 
-
-            PriorityQueue<EvaluationPosition> moves = new PriorityQueue<>();
-            for (EvaluationPosition position : toEval.adjacency) {
-                moves.add(position);
-            }
-
-            int prevScore = moves.peek().score;
             int i=0;
+            int score = moves.peek().score;
             while (moves.size() > 0) {
-                if (moves.peek().score != prevScore || i>=8) { break; }
+                //if (moves.peek().score < score) { break; }
+                if (i >= 5) { break; }
 
-                EvaluationPosition toVisit = moves.poll();
+                list.add(moves.poll());
+                i++;
+            }
+
+            /*System.out.println(board);
+            System.out.println(toEval.action);
+            for (PositionEstimation toVisit : list) {
+                System.out.print(toVisit + " ");
+            }
+            System.out.println();
+            System.out.println();*/
+
+            for (PositionEstimation toVisit : list) {
                 int toVisit_x = toVisit.x;
                 int toVisit_y = toVisit.y;
 
@@ -251,61 +372,9 @@ public class GameTree {
                 board.setAt(toVisit_x, toVisit_y, state);
                 toEval.children.add( createTree(child, !mePlaying, depth-1, board) );
                 board.removeAt(toVisit_x, toVisit_y);
-                i++;
             }
-
-
-            /*PriorityQueue<EvaluationPosition> myMoves = new PriorityQueue<>();
-            PriorityQueue<EvaluationPosition> opponentMoves = new PriorityQueue<>();
-            for (EvaluationPosition position : toEval.adjacency) {
-                if (position.state == MY_STATE) {
-                    myMoves.add(position);
-                }
-                else {
-                    opponentMoves.add(position);
-                }
-            }
-
-            int i=0;
-            while (opponentMoves.size() > 0) {
-                //if ( i >= MIN_EVAL && (moves.peek().score > SCORE_THRESHOLD || (moves.peek().score <= SCORE_THRESHOLD && moves.peek().frequency < 3)) ) { break; }
-                if ( i >= 5 && opponentMoves.peek().score > SCORE_THRESHOLD || i >= 7) { break; }
-
-                EvaluationPosition toVisit = opponentMoves.poll();
-                int toVisit_x = toVisit.x;
-                int toVisit_y = toVisit.y;
-
-                MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
-
-                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
-                Node child = new Node(toEval, toEvalCell);
-
-                board.setAt(toVisit_x, toVisit_y, state);
-                toEval.children.add( createTree(child, !mePlaying, depth-1, board) );
-                board.removeAt(toVisit_x, toVisit_y);
-                i++;
-            }
-
-            boolean posso = true;
-            while (myMoves.size() > 0) {
-                if ( i >= MIN_EVAL && !posso) { break; }
-                posso = false;
-
-                EvaluationPosition toVisit = myMoves.poll();
-                int toVisit_x = toVisit.x;
-                int toVisit_y = toVisit.y;
-
-                MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
-
-                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
-                Node child = new Node(toEval, toEvalCell);
-
-                board.setAt(toVisit_x, toVisit_y, state);
-                toEval.children.add( createTree(child, !mePlaying, depth-1, board) );
-                board.removeAt(toVisit_x, toVisit_y);
-                i++;
-            }*/
         }
+
 
         return toEval;
     }

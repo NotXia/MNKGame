@@ -182,16 +182,18 @@ public class MNKPlayerTesterKnownScenarios {
 	public static void main(String[] args) {
 		VERBOSE = true;
 
-		int[][] configs = new int[][]{new int[]{3, 3, 3}, new int[]{3, 4, 3}, new int[]{4, 3, 3}, new int[]{4, 4, 4}, new int[]{4, 5, 4}, new int[]{5, 4, 4}, new int[]{6, 5, 4}, new int[]{8, 4, 4}, new int[]{30, 4, 4} };
-		GameState[] expectedResult = new GameState[]{GameState.DRAW, GameState.WINP1, GameState.WINP1, GameState.DRAW, GameState.DRAW, GameState.DRAW, GameState.WINP1, GameState.DRAW, GameState.WINP1};
+		int[][] configs = new int[][]{new int[]{3, 3, 3}, new int[]{3, 4, 3}, new int[]{4, 3, 3}, new int[]{4, 4, 4}, new int[]{4, 5, 4}, new int[]{5, 4, 4}, new int[]{6, 5, 4},new int[]{7, 6, 4}, new int[]{8, 4, 4}, new int[]{30, 4, 4} };
+		GameState[] expectedResult = new GameState[]{GameState.DRAW, GameState.WINP1, GameState.WINP1, GameState.DRAW, GameState.DRAW, GameState.DRAW, GameState.WINP1, GameState.WINP1, GameState.DRAW, GameState.WINP1};
 
 		HashMap<String, GameState[]> result = new HashMap<>();
 		result.put("mnkgame.OurPlayer", new GameState[configs.length]);
 		result.put("mnkgame.QuasiRandomPlayer", new GameState[configs.length]);
+		result.put("mnkgame.RandomPlayer", new GameState[configs.length]);
 
 		LinkedList<String[]> challenges = new LinkedList<>();
 		challenges.add(new String[]{"mnkgame.OurPlayer", "mnkgame.OurPlayer"});
 		challenges.add(new String[]{"mnkgame.OurPlayer", "mnkgame.QuasiRandomPlayer"});
+		challenges.add(new String[]{"mnkgame.OurPlayer", "mnkgame.RandomPlayer"});
 
 		for (int i=0; i< configs.length; i++) {
 			M = configs[i][0]; N = configs[i][1]; K = configs[i][2];

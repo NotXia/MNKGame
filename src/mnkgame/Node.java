@@ -1,7 +1,6 @@
 package mnkgame;
 
 import java.util.LinkedList;
-import java.util.PriorityQueue;
 
 public class Node {
     public Node parent;
@@ -10,7 +9,7 @@ public class Node {
     public int score;
     public boolean alphabeta, endState;
 
-    public LinkedList<EvaluationPosition> adjacency;
+    public LinkedList<PositionEstimation> adjacency;
 
     public Node(Node parent, MNKCell action) {
         this.parent = parent;
@@ -47,7 +46,6 @@ public class Node {
         this.children = new LinkedList<>();
         this.children.add(child);
     }
-
 
     /**
      * Indica se il nodo è una foglia

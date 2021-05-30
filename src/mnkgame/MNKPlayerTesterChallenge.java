@@ -178,7 +178,9 @@ public class MNKPlayerTesterChallenge {
 
 	public static void main(String[] args) {
 		//VERBOSE = true;
-		String[] players = new String[]{"mnkgame.OurPlayer", "mnkgame.RandomPlayer", "mnkgame.QuasiRandomPlayer"};
+		//String[] players = new String[]{"mnkgame.OurPlayer", "mnkgame.RandomPlayer", "mnkgame.QuasiRandomPlayer", "mnkgame.DefensivePlayer"};
+		String[] players = new String[]{"mnkgame.OurPlayer", "mnkgame.QuasiRandomPlayer", "mnkgame.RandomPlayer"};
+		String highlight = "mnkgame.OurPlayer";
 
 		HashMap<String, Integer> scores = new HashMap<>();
 		final int WIN = 0, LOSS = 1, DRAW = 2;
@@ -213,6 +215,7 @@ public class MNKPlayerTesterChallenge {
 		for (int i=0; i<configs.length; i++) {
 			int[] config = configs[i];
 			M = config[0]; N = config[1]; K = config[2];
+			//if (M > 10) {break;}
 
 			for (String pair[] : challenges) {
 				for (int j=0; j<4; j++) {
@@ -270,10 +273,10 @@ public class MNKPlayerTesterChallenge {
 					}
 
 					String res = "";
-					if (firstPlayer == "mnkgame.OurPlayer" || secondPlayer == "mnkgame.OurPlayer") {
+					if (firstPlayer == highlight || secondPlayer == highlight) {
 						if (state == GameState.DRAW) {
 							res = "DRAW";
-						} else if (firstPlayer == "mnkgame.OurPlayer") {
+						} else if (firstPlayer == highlight) {
 							if (state == GameState.WINP1) { res = "WIN"; }
 							else { res = "> LOSS <"; }
 						} else {

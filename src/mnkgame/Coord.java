@@ -24,7 +24,7 @@ public class Coord {
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.toString());
+        return Objects.hash(x, y);
     }
 
     public boolean isOnTheSameRowOf(Coord c) {
