@@ -22,6 +22,10 @@
 
 package mnkgame;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.*;
@@ -180,8 +184,20 @@ public class MNKPlayerTesterPlayUntil {
 		return B.gameState() == MNKGameState.DRAW ? GameState.DRAW : (B.gameState() == MNKGameState.WINP1 ? GameState.WINP1 : GameState.WINP2);
 	}
 
+	public static synchronized void ding() {
+		try {
+			Clip clip = AudioSystem.getClip();
+			URL url = new URL("http://cd.textfiles.com/maxsounds/WAV/EFEITOS/TONE.WAV");
+			AudioInputStream inputStream = AudioSystem.getAudioInputStream(url);
+			clip.open(inputStream);
+			clip.start();
+		} catch (Exception e) {
+			System.err.println(e.getMessage());
+		}
+	}
+
 	public static void main(String[] args) {
-		//VERBOSE = true;
+		VERBOSE = true;
 		String firstPlayer = "mnkgame.QuasiRandomPlayer", secondPlayer = "mnkgame.OurPlayer";
 		GameState wantedResult = GameState.WINP1;
 		M = 5;
@@ -214,5 +230,9 @@ public class MNKPlayerTesterPlayUntil {
 			System.out.println();
 			i++;
 		}
+
+		ding();
+		ding();
+		ding();
 	}
 }

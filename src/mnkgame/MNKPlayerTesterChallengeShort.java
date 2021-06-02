@@ -22,10 +22,8 @@
 
 package mnkgame;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.*;
 
 
@@ -44,7 +42,7 @@ import java.util.concurrent.*;
  * &nbsp;&nbsp;-v &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Verbose
  * </p>
  */
-public class MNKPlayerTesterChallenge {
+public class MNKPlayerTesterChallengeShort {
 	private static int     TIMEOUT = 10;
 	private static int     ROUNDS  = 1;
 	private static boolean VERBOSE = false;
@@ -69,7 +67,7 @@ public class MNKPlayerTesterChallenge {
 	}
 
 
-	private MNKPlayerTesterChallenge() {
+	private MNKPlayerTesterChallengeShort() {
 	}
 
 	
@@ -215,6 +213,7 @@ public class MNKPlayerTesterChallenge {
 		for (int i=0; i<configs.length; i++) {
 			int[] config = configs[i];
 			M = config[0]; N = config[1]; K = config[2];
+			if (M > 10) {break;}
 
 			for (String pair[] : challenges) {
 				for (int j=0; j<4; j++) {
