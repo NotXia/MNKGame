@@ -7,6 +7,9 @@ public class Matrix {
     private int size;
     private int columns, rows, target;
 
+    /**
+     * @implNote Costo: O(M*N)
+     * */
     public Matrix(int columns, int rows, int target) {
         this.matrix = new MNKCellState[columns][rows];
         for (int y=0; y<rows; y++) {
@@ -21,6 +24,9 @@ public class Matrix {
         this.target = target;
     }
 
+    /**
+     * @implNote Costo: O(1)
+     * */
     public void setAt(int x, int y, MNKCellState state) {
         if (state != null && state != MNKCellState.FREE) {
             matrix[x][y] = state;

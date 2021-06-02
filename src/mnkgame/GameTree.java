@@ -1,5 +1,4 @@
 package mnkgame;
-import javax.swing.text.Position;
 import java.util.HashMap;
 
 import java.util.LinkedList;
@@ -19,9 +18,7 @@ public class GameTree {
     private final MNKGameState WIN_STATE, LOSS_STATE;
     private final int WIN_SCORE, LOSS_SCORE, DRAW_SCORE;
 
-    private static int MAX_DEPTH = 7;
-    private static final int MIN_EVAL = 5;
-    public static final int SCORE_THRESHOLD = 2;
+    private static int MAX_DEPTH = 6;
 
 
     public GameTree(int M, int N, int K, boolean first) {
@@ -36,8 +33,8 @@ public class GameTree {
         this.WIN_STATE = first ? MNKGameState.WINP1 : MNKGameState.WINP2;
         this.LOSS_STATE = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
 
-        this.WIN_SCORE = 100000;
-        this.LOSS_SCORE = -100000;
+        this.WIN_SCORE = 1000000;
+        this.LOSS_SCORE = -1000000;
         this.DRAW_SCORE = 0;
     }
 
@@ -97,71 +94,36 @@ public class GameTree {
         }
     }
 
+    /**
+     * Imposta un punteggio euristico al nodo
+     * @implNote Costo: O(M*N*K)
+     */
     private void setHeuristicScoreOf(Node node, BoardStatus board, MNKCellState whoHasToPlaying) {
         int playerScore=0, opponentScore=0;
 
-        /*board.removeAt(node.action.j, node.action.i);
-        board.generateMovesToWinAt(node.action.j, node.action.i);
-        playerScore = board.getMovesToWinAt(node.action.j, node.action.i, MY_STATE);
-        opponentScore = board.getMovesToWinAt(node.action.j, node.action.i, OPPONENT_STATE);
-        board.setAt(node.action.j, node.action.i, node.action.state);
+        board.generateGlobalMovesToWin();                                                                       // O(M*N*K)
+        int[] playerPossibilities = board.getAllPossibleWinningScenariosCount(MY_STATE);                        // O(M*N)
+        int[] opponentPossibilities = board.getAllPossibleWinningScenariosCount(OPPONENT_STATE);                // O(M*N)
 
-        playerScore = target - playerScore;
-        opponentScore = target - opponentScore;*/
-
-        /*board.generateGlobalMovesToWin();
-        playerScore = target - board.getGlobalScoreOf(MY_STATE);
-        opponentScore = target - board.getGlobalScoreOf(OPPONENT_STATE);
-
-        //node.score = playerScore - opponentScore;
-
-        if (playerScore == target-1 && whoHasToPlaying == MY_STATE) {
-            node.score = WIN_SCORE;
-        }
-        else if (opponentScore == target-1 && whoHasToPlaying == OPPONENT_STATE) {
-            node.score = LOSS_SCORE;
-        }
-
-        else if (playerScore > opponentScore) {
-            node.score = playerScore;
-        }
-        else if (playerScore < opponentScore) {
-            node.score = -opponentScore;
-        }
-        else if (whoHasToPlaying == MY_STATE) {
-            node.score = -opponentScore;
-        }
-        else {
-            node.score = playerScore;
-        }*/
-
-        board.generateGlobalMovesToWin();
-        int[] playerPossibilities = board.getAllPossibleWinningScenariosCount(MY_STATE);
-        int[] opponentPossibilities = board.getAllPossibleWinningScenariosCount(OPPONENT_STATE);
-
-        int weight = 100;
-        for (int i=1; i<=3 && i<playerPossibilities.length; i++) {
+        int weight = 10000;
+        for (int i=1; i<=2 && i<playerPossibilities.length; i++) {
             playerScore += playerPossibilities[i] * weight;
             opponentScore += opponentPossibilities[i] * weight;
             weight = weight / 10;
         }
 
-        /*System.out.println(board);
-        for (int i=1; i<playerPossibilities.length; i++) {
-            System.out.print("[" + i + ") " + playerPossibilities[i] + "] ");
+        if (playerScore == 0 && opponentScore == 0) {
+            for (int i=1; i<=2 && i<playerPossibilities.length; i++) {
+                playerScore += playerPossibilities[i] * weight;
+                opponentScore += opponentPossibilities[i] * weight;
+                weight = weight / 10;
+            }
         }
-        System.out.println();
-        for (int i=1; i<playerPossibilities.length; i++) {
-            System.out.print("[" + i + ") " + opponentPossibilities[i] + "] ");
-        }
-        System.out.println();
-        System.out.println(playerScore + " " + opponentScore);
-        System.out.println();*/
 
-        if (board.getGlobalScoreOf(MY_STATE) == target-1 && whoHasToPlaying == MY_STATE) {
+        if (board.getGlobalScoreOf(MY_STATE) == 1 && whoHasToPlaying == MY_STATE) {                             // O(M*N)
             node.score = WIN_SCORE;
         }
-        else if (board.getGlobalScoreOf(OPPONENT_STATE) == target-1 && whoHasToPlaying == OPPONENT_STATE) {
+        else if (board.getGlobalScoreOf(OPPONENT_STATE) == 1 && whoHasToPlaying == OPPONENT_STATE) {            // O(M*N)
             node.score = LOSS_SCORE;
         }
         else if (playerScore == 0 && opponentScore == 0) {
@@ -169,49 +131,13 @@ public class GameTree {
         }
         else {
             node.score = playerScore - opponentScore;
-
-            /*if (playerScore > opponentScore) {
-                node.score = playerScore;
-            }
-            else {
-                node.score = -opponentScore;
-            }*/
         }
-
-        /*else if (playerScore > opponentScore) {
-            node.score = playerScore;
-        }
-        else if (playerScore < opponentScore) {
-            node.score = -opponentScore;
-        }
-        else if (whoHasToPlaying == MY_STATE) {
-            node.score = -opponentScore;
-        }
-        else {
-            node.score = playerScore;
-        }*/
-
-/*        System.out.println(board);
-        System.out.println(node.score + " " + whoHasToPlaying + " " + node.action);
-        System.out.println();*/
-
-        /*if (playerScore > opponentScore) {
-            node.score = playerScore;
-        }
-        else if (playerScore < opponentScore) {
-            node.score = -opponentScore;
-        }
-        else if (playerScore < target/2) {
-            node.score = 0;
-        }
-        else if (state == MY_STATE) {
-            node.score = -opponentScore;
-        }
-        else {
-            node.score = playerScore;
-        }*/
     }
 
+    /**
+     * Restituisce una coda con priorità contenente le celle adiacenti a quelle già piazzate, ordinate per importanza
+     * @implNote Costo: O(8*h*(max{M, N} * K))
+     */
     public PriorityQueue<PositionEstimation> getAdj(Node node, BoardStatus board, MNKCellState state) {
         HashMap<Coord, PositionEstimation> hm = new HashMap<>();
         PriorityQueue<PositionEstimation> out = new PriorityQueue<>();
@@ -329,6 +255,7 @@ public class GameTree {
      * @implNote Costo:
      * */
     private Node createTree(Node toEval, boolean mePlaying, int depth, BoardStatus board) {
+        board.generateMovesToWinAt(toEval.action.j, toEval.action.i);                               // O(max{M, N}*K)
         MNKGameState gameState = board.statusAt(toEval.action.j, toEval.action.i);
 
         if (gameState != MNKGameState.OPEN) {
@@ -336,7 +263,7 @@ public class GameTree {
             toEval.endState = true;
         }
         else if (depth <= 0) {
-            setHeuristicScoreOf(toEval, board, mePlaying ? MY_STATE : OPPONENT_STATE);
+            setHeuristicScoreOf(toEval, board, mePlaying ? MY_STATE : OPPONENT_STATE);              // O(M*N*K)
         }
         else {
             LinkedList<PositionEstimation> list = new LinkedList<>();
@@ -353,11 +280,12 @@ public class GameTree {
             }
 
             /*System.out.println(board);
-            System.out.println(toEval.action);
-            for (PositionEstimation toVisit : list) {
-                System.out.print(toVisit + " ");
+            for (PositionEstimation pe : list) {
+                System.out.println(pe);
             }
-            System.out.println();
+            for (PositionEstimation pe : moves) {
+                System.out.print(pe + " ");
+            }
             System.out.println();*/
 
             for (PositionEstimation toVisit : list) {

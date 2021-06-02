@@ -65,7 +65,8 @@ public class BoardStatus {
 
     /**
      * Imposta lo stato di una determinata cella
-     * @implNote Costo: O(1)
+     * @implNote Costo (Pessimo): O(max{M, N})<br/>
+     *           Costo (ottimo): O(1)
      * */
     public void setAt(int x, int y, MNKCellState state) {
         matrix.setAt(x, y, state);
@@ -74,7 +75,8 @@ public class BoardStatus {
 
     /**
      * Imposta a FREE lo stato di una determinata cella
-     * @implNote Costo: O(1)
+     * @implNote Costo (Pessimo): O(max{M, N})<br/>
+     *           Costo (ottimo): O(1)
      * */
     public void removeAt(int x, int y) {
         if (matrix.getAt(x, y) != MNKCellState.FREE) {
@@ -95,7 +97,14 @@ public class BoardStatus {
         return matrix.getAt(x, y) == MNKCellState.FREE;
     }
 
+    /**
+     * Imposta a null le celle degli score influenzate dalla posizione x, y
+     * @implNote Costo (pessimo): O(max{M, N})<br/>
+     *           Costo (ottimo): O(1)
+     * */
     private void clearScores(int x, int y) {
+        if (rowScore_player[x][y] == null) { return; }
+
         for (int i=0; i<columns; i++) {
             rowScore_player[i][y] = null;
             rowScore_opponent[i][y] = null;
@@ -137,7 +146,7 @@ public class BoardStatus {
      * Restituisce un vettore di Score tale che la posizione i-esima indica il numero di mosse mancanti per vincere se si seleziona la mossa in quella posizione
      * @param board Vettore contenente la configurazione di gioco rispetto ad una riga/colonna/diagonale
      * @param toCheckState Lo stato da controllare (giocatore o avversario)
-     * @implNote Costo: (max{M, N} * K)
+     * @implNote Costo (pessimo): (board.length * K)
      * */
     private Score[] getScoresArray(MNKCellState board[], MNKCellState toCheckState) {
         /*if (board.length < target) {
@@ -148,7 +157,7 @@ public class BoardStatus {
             return s;
         }*/
 
-        MNKCellState oppositeState = toCheckState == MNKCellState.P1 ? MNKCellState.P2 : MNKCellState.P1;
+        MNKCellState oppositeState = (toCheckState == MNKCellState.P1) ? MNKCellState.P2 : MNKCellState.P1;
         Score[] s = new Score[board.length];
 
         if (board[0] == toCheckState) {
@@ -193,7 +202,7 @@ public class BoardStatus {
             // Progapazione
             if (s[i].aligned == target) {
                 for (int k=1; k<=target-1 && i-k>=0; k++) {
-                    if ( (s[i-k].aligned==0 && s[i-k].moves==0) || (s[i-k].aligned == target && s[i-k].moves < s[i].moves) ) { break; }
+                    if ( (s[i-k].aligned==0 && s[i-k].moves==0) || (s[i-k].aligned == target && s[i-k].moves <= s[i].moves) ) { break; }
                     s[i-k].aligned = s[i].aligned;
                     s[i-k].moves = s[i].moves;
                     s[i-k].start = s[i].start;
@@ -219,19 +228,19 @@ public class BoardStatus {
         else {
             score[x][y] = new Score(value);
         }
-        /*score[x][y] = new Score(value);*/
     }
 
     /**
      * Riempie nella matrice degli Score delle righe, la riga contenente la cella nella posizione indicata
-     * @implNote Costo:
+     * @implNote Costo (pessimo): O(N*K)<br/>
+     *           Costo (ottimo): O(1)
      * */
     private void fillRowScoreAt(int x, int y) {
         if (rowScore_player[x][y] != null && rowScore_opponent[x][y] != null) { return; }
         Score[] moves;
 
         // Giocatore
-        moves = getScoresArray(matrix.getRowAt(x, y), PLAYER_STATE);
+        moves = getScoresArray(matrix.getRowAt(x, y), PLAYER_STATE); // O(N*K + N)
         for (int j=0; j<columns; j++) {
             setScore(rowScore_player, j, y, moves[j]);
         }
@@ -245,14 +254,15 @@ public class BoardStatus {
 
     /**
      * Riempie nella matrice degli Score delle colonne, la colonna contenente la cella nella posizione indicata
-     * @implNote Costo:
+     * @implNote Costo (pessimo): O(M*K)<br/>
+     *           Costo (ottimo): O(1)
      * */
     private void fillColumnScoreAt(int x, int y) {
         if (columnScore_player[x][y] != null && columnScore_opponent[x][y] != null) { return; }
         Score[] moves;
 
         // Giocatore
-        moves = getScoresArray(matrix.getColumnAt(x, y), PLAYER_STATE);
+        moves = getScoresArray(matrix.getColumnAt(x, y), PLAYER_STATE); // O(M*K + M)
         for (int j=0; j<rows; j++) {
             setScore(columnScore_player, x, j, moves[j]);
         }
@@ -266,19 +276,21 @@ public class BoardStatus {
 
     /**
      * Riempie nella matrice degli Score delle diagonali principali, la diagonale contenente la cella nella posizione indicata
-     * @implNote Costo:
+     * @implNote Costo (pessimo): O(min{M, N}*K)<br/>
+     *           Costo (ottimo): O(1)
      * */
     private void fillMainDiagonalScoreAt(int x, int y) {
         if (mainDiagonalScore_player[x][y] != null && mainDiagonalScore_opponent[x][y] != null) { return; }
         Score[] moves;
 
+        // TODO: FORMULA PER INIZIO DIAGONALE
         int diagonalStartX = x, diagonalStartY = y;
         while(diagonalStartX > 0 && diagonalStartY > 0) {
             diagonalStartX--; diagonalStartY--;
         }
 
         // Giocatore
-        moves = getScoresArray(matrix.getMainDiagonalAt(x, y), PLAYER_STATE);
+        moves = getScoresArray(matrix.getMainDiagonalAt(x, y), PLAYER_STATE); // O(min{M, N}*K + min{M, N})
         int i = diagonalStartX, j = diagonalStartY;
         for (int k=0; k<moves.length; k++) {
             setScore(mainDiagonalScore_player, i, j, moves[k]);
@@ -296,19 +308,21 @@ public class BoardStatus {
 
     /**
      * Riempie nella matrice degli Score delle diagonali secondarie, la diagonale contenente la cella nella posizione indicata
-     * @implNote Costo:
+     * @implNote Costo (pessimo): O(min{M, N}*K)<br/>
+     *           Costo (ottimo): O(1)
      * */
     private void fillSecondaryDiagonalScoreAt(int x, int y) {
         if (secondaryDiagonalScore_player[x][y] != null && secondaryDiagonalScore_opponent[x][y] != null) { return; }
         Score[] moves;
 
+        // TODO: FORMULA PER INIZIO DIAGONALE
         int diagonalStartX = x, diagonalStartY = y;
         while (diagonalStartX < columns-1 && diagonalStartY > 0) {
             diagonalStartX++; diagonalStartY--;
         }
 
         // Giocatore
-        moves = getScoresArray(matrix.getSecondaryDiagonalAt(x, y), PLAYER_STATE);
+        moves = getScoresArray(matrix.getSecondaryDiagonalAt(x, y), PLAYER_STATE); // O(min{M, N}*K + min{M, N})
         int i = diagonalStartX, j = diagonalStartY;
         for (int k=0; k<moves.length; k++) {
             setScore(secondaryDiagonalScore_player, i, j, moves[k]);
@@ -326,7 +340,8 @@ public class BoardStatus {
 
     /**
      * Riempie, in tutte le matrici degli score, la posizione indicata (e le celle sulla stessa riga/colonna/diagonale)
-     * @implNote Costo:
+     * @implNote Costo (pessimo): (max{M, N}*K)<br/>
+     *           Costo (ottimo): O(1)
      * */
     public void generateMovesToWinAt(int x, int y) {
         fillRowScoreAt(x, y);
@@ -335,14 +350,27 @@ public class BoardStatus {
         fillSecondaryDiagonalScoreAt(x, y);
     }
 
+    /**
+     * Riempie tutte le matrici degli score
+     * @implNote Costo: O(M*N*K) = O(4*M*N*K) L'idea è che si genera lo score per tutte le celle e bisogna sempre propagare (caso pessimo)
+     * */
     public void generateGlobalMovesToWin() {
-        for (int i=0; i<rows; i++) {
-            for (int j=0; j<columns; j++) {
-                generateMovesToWinAt(j, i);
-            }
-        }
+        for (int x=0; x<columns; x++) { fillColumnScoreAt(x, 0); }                      // O(N * M*K)
+
+        for (int y=0; y<rows; y++) { fillRowScoreAt(0, y); }                            // O(M * N*K)
+
+        for (int y=0; y<rows; y++) { fillMainDiagonalScoreAt(0, y); }
+        for (int x=1; x<columns; x++) { fillMainDiagonalScoreAt(x, 0); }                // O((M+N-1) * min{M, N}*K) dove (M+N-1) è il numero di diagonali
+
+        for (int y=0; y<rows; y++) { fillSecondaryDiagonalScoreAt(columns-1, y); }
+        for (int x=columns-2; x>=0; x--) { fillSecondaryDiagonalScoreAt(x, 0); }        // O((M+N-1) * min{M, N}*K) dove (M+N-1) è il numero di diagonali
     }
 
+    /**
+     * Restituisce il minimo punteggio tra tutte le matrici degli score
+     * @param toCheckState Indica lo stato della cella che si vuole controllare (giocatore o avversario)
+     * @implNote Costo: O(M*N) [GLI SCORE DEVONO ESSERE STATI GENERATI]
+     * */
     public int getGlobalScoreOf(MNKCellState toCheckState) {
         int out = target;
 
@@ -385,75 +413,41 @@ public class BoardStatus {
     }
 
     /**
-     * Restituisce il numero minimo di mosse necessarie per vincere a partireda una determinata cella
+     * Restituisce il numero minimo di mosse necessarie per vincere a partire da una determinata cella
      * @param toCheckState Indica lo stato della cella che si vuole controllare (giocatore o avversario)
-     * @implNote Costo:
+     * @implNote Costo: O(1) [GLI SCORE DEVONO ESSERE STATI GENERATI]
      * */
     public int getMovesToWinAt(int x, int y, MNKCellState toCheckState) {
         if (toCheckState == PLAYER_STATE) {
             return Math.min(
-                columnScore_player[x][y].moves,
-                Math.min(
-                    rowScore_player[x][y].moves,
+                    columnScore_player[x][y].moves,
                     Math.min(
-                        mainDiagonalScore_player[x][y].moves,
-                        secondaryDiagonalScore_player[x][y].moves
+                            rowScore_player[x][y].moves,
+                            Math.min(
+                                    mainDiagonalScore_player[x][y].moves,
+                                    secondaryDiagonalScore_player[x][y].moves
+                            )
                     )
-                )
             );
-        }
-        else {
+        } else {
             return Math.min(
-                columnScore_opponent[x][y].moves,
-                Math.min(
-                    rowScore_opponent[x][y].moves,
+                    columnScore_opponent[x][y].moves,
                     Math.min(
-                        mainDiagonalScore_opponent[x][y].moves,
-                        secondaryDiagonalScore_opponent[x][y].moves
+                            rowScore_opponent[x][y].moves,
+                            Math.min(
+                                    mainDiagonalScore_opponent[x][y].moves,
+                                    secondaryDiagonalScore_opponent[x][y].moves
+                            )
                     )
-                )
             );
         }
     }
 
-/*
-    public int getRowMovesToWinAt(int x, int y, MNKCellState toCheckState) {
-        if (toCheckState == PLAYER_STATE) {
-            return rowScore_player[x][y].moves;
-        }
-        else {
-            return rowScore_opponent[x][y].moves;
-        }
-    }
-
-    public int getColumnMovesToWinAt(int x, int y, MNKCellState toCheckState) {
-        if (toCheckState == PLAYER_STATE) {
-            return columnScore_player[x][y].moves;
-        }
-        else {
-            return columnScore_opponent[x][y].moves;
-        }
-    }
-
-    public int getMainDiagonalMovesToWinAt(int x, int y, MNKCellState toCheckState) {
-        if (toCheckState == PLAYER_STATE) {
-            return mainDiagonalScore_player[x][y].moves;
-        }
-        else {
-            return mainDiagonalScore_opponent[x][y].moves;
-        }
-    }
-
-    public int getSecondaryDiagonalMovesToWinAt(int x, int y, MNKCellState toCheckState) {
-        if (toCheckState == PLAYER_STATE) {
-            return secondaryDiagonalScore_player[x][y].moves;
-        }
-        else {
-            return secondaryDiagonalScore_opponent[x][y].moves;
-        }
-    }
-*/
-
+    /**
+     * Indica, rispetto ad una determinata posizione, in quante direzioni è ancora possibili vincere
+     * @param toCheckState Indica lo stato della cella che si vuole controllare (giocatore o avversario)
+     * @implNote Costo: O(1) [GLI SCORE DEVONO ESSERE STATI GENERATI]
+     * */
     public int numberOfOpenDirectionsAt(int x, int y, MNKCellState toCheckState) {
         int openDirections = 0;
         Score[][] rowScore, columnScore, mainDiagonalScore, secondaryDiagonalScore;
@@ -471,21 +465,29 @@ public class BoardStatus {
             secondaryDiagonalScore = secondaryDiagonalScore_opponent;
         }
 
-        if (isValidCell(x-1, y)) { openDirections += rowScore[x-1][y].moves != NOT_WINNABLE_SCORE ? 1 : 0; }
-        if (isValidCell(x+1, y)) { openDirections += rowScore[x+1][y].moves != NOT_WINNABLE_SCORE ? 1 : 0; }
-        if (isValidCell(x, y-1)) { openDirections += columnScore[x][y-1].moves != NOT_WINNABLE_SCORE ? 1 : 0; }
-        if (isValidCell(x, y+1)) { openDirections += columnScore[x][y+1].moves != NOT_WINNABLE_SCORE ? 1 : 0; }
-        if (isValidCell(x-1, y-1)) { openDirections += mainDiagonalScore[x-1][y-1].moves != NOT_WINNABLE_SCORE ? 1 : 0; }
-        if (isValidCell(x+1, y+1)) { openDirections += mainDiagonalScore[x+1][y+1].moves != NOT_WINNABLE_SCORE ? 1 : 0; }
-        if (isValidCell(x+1, y-1)) { openDirections += secondaryDiagonalScore[x+1][y-1].moves != NOT_WINNABLE_SCORE ? 1 : 0; }
-        if (isValidCell(x-1, y+1)) { openDirections += secondaryDiagonalScore[x-1][y+1].moves != NOT_WINNABLE_SCORE ? 1 : 0; }
+        if ( (isValidCell(x-1, y) && rowScore[x-1][y].moves != NOT_WINNABLE_SCORE) || (isValidCell(x+1, y) && rowScore[x+1][y].moves != NOT_WINNABLE_SCORE) ) {
+            openDirections += 1;
+        }
+        if ( (isValidCell(x, y-1) && columnScore[x][y-1].moves != NOT_WINNABLE_SCORE) || (isValidCell(x, y+1) && columnScore[x][y+1].moves != NOT_WINNABLE_SCORE) ) {
+            openDirections += 1;
+        }
+        if ( (isValidCell(x-1, y-1) && mainDiagonalScore[x-1][y-1].moves != NOT_WINNABLE_SCORE) || (isValidCell(x+1, y+1) && mainDiagonalScore[x+1][y+1].moves != NOT_WINNABLE_SCORE) ) {
+            openDirections += 1;
+        }
+        if ( (isValidCell(x+1, y-1) && secondaryDiagonalScore[x+1][y-1].moves != NOT_WINNABLE_SCORE) || (isValidCell(x-1, y+1) && secondaryDiagonalScore[x-1][y+1].moves != NOT_WINNABLE_SCORE) ) {
+            openDirections += 1;
+        }
 
         return openDirections;
     }
 
-
+    /**
+     * Restituisce un array contenente il numero di possibili modi per vincere
+     * @param toCheckState Indica lo stato della cella che si vuole controllare (giocatore o avversario)
+     * @return Array di interi dove se v[i] = q allora ci sono q modi per vincere che necessitano un numero di i mosse
+     * @implNote Costo: O(M*N) [GLI SCORE DEVONO ESSERE STATI GENERATI]
+     * */
     public int[] getAllPossibleWinningScenariosCount(MNKCellState toCheckState) {
-        int rowPrev = -1, columnPrev = -1, mainDiagonalPrev = -1, secondaryDiagonalPrev = -1;
         int[] out = new int[target+1];
         Score[][] rowScore, columnScore, mainDiagonalScore, secondaryDiagonalScore;
         if (toCheckState == PLAYER_STATE) {
@@ -502,58 +504,67 @@ public class BoardStatus {
         }
 
         for (int y=0; y<rows; y++) {
-            rowPrev = -1;
             for (int x=0; x<columns; x++) {
                 if (rowScore[x][y].aligned != target) { continue; }
-                if (rowPrev != rowScore[x][y].start && isFreeAt(x, y)) { out[rowScore[x][y].moves]++; rowPrev = rowScore[x][y].start; }
+                if (isFreeAt(x, y)) {
+                    out[rowScore[x][y].moves]++;
+                    x = rowScore[x][y].end; // Salta alla fine del gruppo appena elaborato
+                }
             }
         }
 
         for (int x=0; x<columns; x++) {
-            columnPrev = -1;
             for (int y=0; y<rows; y++) {
                 if (columnScore[x][y].aligned != target) { continue; }
-                if (columnPrev != columnScore[x][y].start && isFreeAt(x, y)) { out[columnScore[x][y].moves]++; columnPrev = columnScore[x][y].start; }
+                if (isFreeAt(x, y)) {
+                    out[columnScore[x][y].moves]++;
+                    y = columnScore[x][y].end; // Salta alla fine del gruppo appena elaborato
+                }
             }
         }
 
         for (int y=0; y<rows; y++) {
-            mainDiagonalPrev = -1;
             int i=0, j=y;
             while (isValidCell(i, j)) {
-                if (mainDiagonalScore[i][j].aligned == target) {
-                    if (mainDiagonalPrev != mainDiagonalScore[i][j].start && isFreeAt(i, j)) { out[mainDiagonalScore[i][j].moves]++; mainDiagonalPrev = mainDiagonalScore[i][j].start; }
+                if (mainDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
+                    int end = mainDiagonalScore[i][j].end;
+                    out[mainDiagonalScore[i][j].moves]++;
+                    j = j + (end - i); i = end; // Salta alla fine del gruppo appena elaborato
                 }
                 i++; j++;
             }
         }
         for (int x=1; x<columns; x++) {
-            mainDiagonalPrev = -1;
             int i=x, j=0;
             while (isValidCell(i, j)) {
-                if (mainDiagonalScore[i][j].aligned == target) {
-                    if (mainDiagonalPrev != mainDiagonalScore[i][j].start && isFreeAt(i, j)) { out[mainDiagonalScore[i][j].moves]++; mainDiagonalPrev = mainDiagonalScore[i][j].start; }
+                if (mainDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
+                    int end = mainDiagonalScore[i][j].end;
+                    int old_i = i;
+                    out[mainDiagonalScore[i][j].moves]++;
+                    i = end + x; j = j + (i - old_i); // Salta alla fine del gruppo appena elaborato
                 }
                 i++; j++;
             }
         }
 
         for (int y=0; y<rows; y++) {
-            secondaryDiagonalPrev = -1;
             int i=columns-1, j=y;
             while (isValidCell(i, j)) {
-                if (secondaryDiagonalScore[i][j].aligned == target) {
-                    if (secondaryDiagonalPrev != secondaryDiagonalScore[i][j].start && isFreeAt(i, j)) { out[secondaryDiagonalScore[i][j].moves]++; secondaryDiagonalPrev = secondaryDiagonalScore[i][j].start; }
+                if (secondaryDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
+                    int end = secondaryDiagonalScore[i][j].end;
+                    out[secondaryDiagonalScore[i][j].moves]++;
+                    i = i - end; j = j + end; // Salta alla fine del gruppo appena elaborato
                 }
                 i--; j++;
             }
         }
         for (int x=columns-2; x>=0; x--) {
-            secondaryDiagonalPrev = -1;
             int i=x, j=0;
             while (isValidCell(i, j)) {
-                if (secondaryDiagonalScore[i][j].aligned == target) {
-                    if (secondaryDiagonalPrev != secondaryDiagonalScore[i][j].start && isFreeAt(i, j)) { out[secondaryDiagonalScore[i][j].moves]++; secondaryDiagonalPrev = secondaryDiagonalScore[i][j].start; }
+                if (secondaryDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
+                    int end = secondaryDiagonalScore[i][j].end;
+                    out[secondaryDiagonalScore[i][j].moves]++;
+                    i = i - end; j = j + end; // Salta alla fine del gruppo appena elaborato
                 }
                 i--; j++;
             }
@@ -571,7 +582,7 @@ public class BoardStatus {
 
     /**
      * Restituisce lo stato della griglia controllando da una determinata posizione (vittoria, sconfitta, pareggio, partita aperta)
-     * @implNote Costo:
+     * @implNote Costo: O(1) [GLI SCORE DEVONO ESSERE STATI GENERATI]
      * */
     public MNKGameState statusAt(int x, int y) {
         if (matrix.getAt(x, y) == MNKCellState.FREE) { return MNKGameState.OPEN; }
@@ -579,7 +590,6 @@ public class BoardStatus {
         final MNKGameState WIN_STATE = PLAYER_STATE == MNKCellState.P1 ? MNKGameState.WINP1 : MNKGameState.WINP2;
         final MNKGameState LOSS_STATE = PLAYER_STATE == MNKCellState.P1 ? MNKGameState.WINP2 : MNKGameState.WINP1;
 
-        generateMovesToWinAt(x, y);
         if (matrix.size() == columns * rows) {
             return MNKGameState.DRAW;
         }
@@ -595,31 +605,36 @@ public class BoardStatus {
     }
 
     public static void main(String[] args) {
-        BoardStatus bs = new BoardStatus(3, 3, 3, MNKCellState.P1);
+        int M = 5, N = 5;
+        BoardStatus bs = new BoardStatus(M, N, 4, MNKCellState.P1);
 
-        bs.setAt(0, 0, MNKCellState.P2);
-        bs.setAt(1, 0, MNKCellState.P1);
-        bs.setAt(2, 0, MNKCellState.P2);
-
+        /*bs.setAt(2, 0, MNKCellState.P1);
         bs.setAt(0, 1, MNKCellState.P1);
-        bs.setAt(1, 1, MNKCellState.P1);
-
+        bs.setAt(3, 1, MNKCellState.P1);
+        bs.setAt(0, 2, MNKCellState.P2);
         bs.setAt(1, 2, MNKCellState.P2);
-        bs.setAt(2, 2, MNKCellState.P1);
+        bs.setAt(3, 2, MNKCellState.P2);*/
+        bs.setAt(0, 2, MNKCellState.P2);
+        bs.setAt(1, 2, MNKCellState.P2);
+        bs.setAt(2, 2, MNKCellState.P2);
+        bs.setAt(3, 2, MNKCellState.P2);
+        //bs.setAt(1, 1, MNKCellState.P2);
 
         bs.generateGlobalMovesToWin();
 
         System.out.println(bs);
 
+        //System.out.println(bs.numberOfOpenDirectionsAt(1, 1, MNKCellState.P2));
+
         int[] x = bs.getAllPossibleWinningScenariosCount(MNKCellState.P2);
 
-        for (int i=1; i<x.length; i++) {
+        for (int i=0; i<x.length; i++) {
             System.out.println(i + ") " + x[i]);
         }
 
-        /*for (int i=0; i<4; i++) {
-            for (int j=0; j<4; j++) {
-                System.out.print(bs.rowScore_player[j][i] + " | ");
+        /*for (int i=0; i<M; i++) {
+            for (int j=0; j<N; j++) {
+                System.out.print(bs.mainDiagonalScore_player[j][i] + " | ");
             }
             System.out.println();
             System.out.println("-----------------------------------------------------------------------");
