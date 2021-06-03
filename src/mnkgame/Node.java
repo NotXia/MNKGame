@@ -9,8 +9,6 @@ public class Node {
     public int score;
     public boolean alphabeta, endState;
 
-    public LinkedList<PositionEstimation> adjacency;
-
     public Node(Node parent, MNKCell action) {
         this.parent = parent;
         this.children = new LinkedList<>();
@@ -18,7 +16,6 @@ public class Node {
         this.score = 0;
         this.alphabeta = false;
         this.endState = false;
-        this.adjacency = new LinkedList<>();
     }
 
     /**
