@@ -200,8 +200,8 @@ public class MNKPlayerTesterPlayUntil {
 		VERBOSE = true;
 		String firstPlayer = "mnkgame.QuasiRandomPlayer", secondPlayer = "mnkgame.OurPlayer";
 		GameState wantedResult = GameState.WINP1;
-		M = 5;
-		N = 5;
+		M = 6;
+		N = 4;
 		K = 4;
 
 		GameState result = null;

@@ -1,11 +1,11 @@
 package mnkgame;
 
-public class OurPlayer implements MNKPlayer {
+public class OurPlayer2 implements MNKPlayer {
     private int rows, columns, target;
     private boolean first;
     private GameTree gameTree;
 
-    public OurPlayer() {
+    public OurPlayer2() {
     }
 
     public void initPlayer(int M, int N, int K, boolean first, int timeout_in_secs) {
@@ -38,7 +38,6 @@ public class OurPlayer implements MNKPlayer {
             outCell = this.gameTree.nextMove();
         }
 
-        //System.out.println("ALBERO ALTO " + gameTree.size());
         if (true) {
             end_t = System.currentTimeMillis();
             elapsed = (end_t - start_t);
@@ -52,6 +51,6 @@ public class OurPlayer implements MNKPlayer {
     }
 
     public String playerName() {
-        return "xIA";
+        return "AAAA";
     }
  }

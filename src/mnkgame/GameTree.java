@@ -12,14 +12,14 @@ import java.util.PriorityQueue;
 public class GameTree {
     private Node root;
     private int rows, columns, target;
-    private boolean first;
+    private boolean first, canExtend;
     private final MNKCellState MY_STATE, OPPONENT_STATE;
     private final MNKGameState WIN_STATE, LOSS_STATE;
     private final int WIN_SCORE, LOSS_SCORE, DRAW_SCORE;
 
-    private static int MAX_DEPTH = 6;
+    private static int MAX_DEPTH = 9; // Va messo dispari!!!1!11!!
 
-    final int WIN_MOVE, BLOCK_MOVE1, BLOCK_MOVE2_DANGEROUS, BLOCK_MOVE2;
+    final int PRIORITY_1, PRIORITY_2, PRIORITY_3, PRIORITY_4;
 
     public GameTree(int M, int N, int K, boolean first) {
         this.root = null;
@@ -28,6 +28,7 @@ public class GameTree {
         this.target = K;
 
         this.first = first;
+        this.canExtend = true;
         this.MY_STATE = first ? MNKCellState.P1 : MNKCellState.P2;
         this.OPPONENT_STATE = first ? MNKCellState.P2 : MNKCellState.P1;
         this.WIN_STATE = first ? MNKGameState.WINP1 : MNKGameState.WINP2;
@@ -37,10 +38,10 @@ public class GameTree {
         this.LOSS_SCORE = -1000000;
         this.DRAW_SCORE = 0;
 
-        this.WIN_MOVE = target * 10000;
-        this.BLOCK_MOVE1 = target * 1000;
-        this.BLOCK_MOVE2_DANGEROUS = target * 200; // Mosse che portano a vicoli ciechi
-        this.BLOCK_MOVE2 = target * 100;
+        this.PRIORITY_1 = target * 10000;
+        this.PRIORITY_2 = target * 1000;
+        this.PRIORITY_3 = target * 200;
+        this.PRIORITY_4 = target * 100;
     }
 
     public boolean isEmpty() {
@@ -175,22 +176,41 @@ public class GameTree {
 
                     /**
                      *
-                     * - Se posso vincere, vinco
-                     * - Se ci sono minacce (fino a 2 mosse mancanti), blocco
-                     * - Prendo gli allineamenti maggiori
+                     * Ordine di priorità:
+                     * - Mossa vincente
+                     * - Blocco una mossa vincente dell'avversario
+                     * - Imposto un vicolo cieco per me
+                     * - Blocco un vicolo cieco dell'avversario
+                     * - Scelgo la mossa migliore per me
                      *
                      * */
 
                     board.generateMovesToWinAt(toVisit_x, toVisit_y);
                     int playerMovesToWin = board.getMovesToWinAt(toVisit_x, toVisit_y, PLAYING_STATE);
                     int oppositeMovesToWin = board.getMovesToWinAt(toVisit_x, toVisit_y, WAITING_STATE);
+
+                    int openDirections = board.numberOfOpenDirectionsAt(toVisit_x, toVisit_y, PLAYING_STATE); // Serve eventualmente per dopo
+
                     EstimatedPosition estimation = null;
 
                     if (playerMovesToWin == 1) {
-                        estimation = new EstimatedPosition(toVisit_x, toVisit_y, WIN_MOVE);
+                        estimation = new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_1);
                     } else if (oppositeMovesToWin == 1) {
-                        estimation =  new EstimatedPosition(toVisit_x, toVisit_y, BLOCK_MOVE1);
-                    } else if (oppositeMovesToWin == 2) {
+                        estimation =  new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_2);
+                    }
+
+                    if (playerMovesToWin == 2) { // Cerco un vicolo cieco a mio favore
+                        board.setAt(toVisit_x, toVisit_y, PLAYING_STATE);
+                        board.generateMovesToWinAt(toVisit_x, toVisit_y);
+                        int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, PLAYING_STATE);
+                        board.removeAt(toVisit_x, toVisit_y);
+
+                        if (possibilities[1] > 1) {
+                            estimation = new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_3);
+                        }
+                    }
+
+                    if (estimation == null && oppositeMovesToWin == 2) { // Cerco un vicolo cieco a mio sfavore
                         // Controllo la situazione se l'altro mette la mossa in questa posizione
                         board.setAt(toVisit_x, toVisit_y, WAITING_STATE);
                         board.generateMovesToWinAt(toVisit_x, toVisit_y);
@@ -198,16 +218,15 @@ public class GameTree {
                         board.removeAt(toVisit_x, toVisit_y);
 
                         if (possibilities[1] > 1) {
-                            estimation = new EstimatedPosition(toVisit_x, toVisit_y, BLOCK_MOVE2_DANGEROUS);
-                        } else {
-                            //estimation = new EstimatedPosition(toVisit_x, toVisit_y, BLOCK_MOVE2);
+                            estimation = new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_4);
                         }
                     }
 
                     if (estimation == null) {
                         int aligned = target - playerMovesToWin + 1;
-                        //int blocked = target - oppositeMovesToWin;
-                        estimation = new EstimatedPosition(toVisit_x, toVisit_y, aligned);
+                        int blocked = target - oppositeMovesToWin;
+
+                        estimation = new EstimatedPosition(toVisit_x, toVisit_y, aligned, blocked, openDirections);
                     }
 
                     out.add(estimation);
@@ -244,10 +263,14 @@ public class GameTree {
             int i=0;
             int score = moves.peek().score;
             while (moves.size() > 0) {
-                if (moves.peek().score < BLOCK_MOVE2_DANGEROUS && i >= 5) { break; }
-                /*if (moves.peek().score != score) {
-                    if (moves.peek().score < target * 20 && i >= 4) { break; }
-                }*/
+                /**
+                 * - Per le mosse critiche, valuto tutte quelle che hanno lo stesso score e termino quando ne trovo una diversa
+                 *   (idea: se devo bloccare/vincere non dovrò preoccuparmi di fare altro)
+                 * - Per le mosse di altro tipo ne estraggo un paio e le valuto
+                 * */
+                if (moves.peek().score >= PRIORITY_4 && moves.peek().score != score) { break; }
+                if (moves.peek().score < PRIORITY_4 && i >= 3) { break; }
+                //if (moves.peek().score < BLOCK_MOVE2_DANGEROUS && i >= 5) { break; }
                 //if (moves.peek().score != score || (moves.peek().score < target * 20 && i>=3)) { break; }
                 //if (moves.peek().score != score) { break; }
 
@@ -318,7 +341,7 @@ public class GameTree {
      * */
     private void extendLeaves(Node node) {
         if (node.isLeaf() && !node.endState) {
-            extendNode(node, 1);
+            extendNode(node, 2);
         }
         else {
             for (Node child : node.children) {
@@ -346,14 +369,20 @@ public class GameTree {
             Node new_root = new Node(root, move);
             root.setSelectedChild(new_root);
             root = new_root;
-            extendNode(this.root, MAX_DEPTH);
+
+            extendNode(this.root, MAX_DEPTH-1);
             alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+
+            canExtend = false;
         }
         else {
             root.setSelectedChild(bestChild);
             root = bestChild;
-            extendLeaves(root);
-            alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+            if (canExtend) {
+                extendLeaves(root);
+                alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+            }
+            canExtend = !canExtend;
         }
 
     }
@@ -364,21 +393,38 @@ public class GameTree {
      * @implNote Costo:
      * */
     public MNKCell nextMove() {
-        Node nextChild = root.children.peek(); /*** TODO RIMETTERE POLL **/
+        Node nextChild = root.children.peek(); /*** TODO RIMETTERE POLL */
 
         for (Node child : root.children) {
-            System.out.println(child.action + " " + child.score + " " + child.alphabeta);
+            //System.out.println(child.action + " " + child.score + " " + child.alphabeta);
             if (child.score > nextChild.score && child.alphabeta) {
                 nextChild = child;
             }
         }
-        System.out.println();
+        //System.out.println();
 
         root.setSelectedChild(nextChild);
         root = nextChild;
 
-        extendLeaves(root);
-        alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+        if (canExtend) {
+            extendLeaves(root);
+            alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+        }
+        canExtend = !canExtend;
+
         return root.action;
+    }
+
+    private int size_r(Node node) {
+        if (node.isLeaf()) {return 0;}
+        int size = -1;
+        for (Node child : node.children) {
+            size = Math.max(size, 1+size_r(child));
+        }
+        return size;
+    }
+
+    public int size() {
+        return size_r(root);
     }
 }

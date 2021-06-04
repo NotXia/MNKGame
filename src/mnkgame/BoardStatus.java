@@ -459,6 +459,7 @@ public class BoardStatus {
      * */
     public int[] getAllPossibleWinningScenariosCount(MNKCellState toCheckState) {
         int[] out = new int[target+1];
+        int prevStart;
         Score[][] rowScore, columnScore, mainDiagonalScore, secondaryDiagonalScore;
         if (toCheckState == PLAYER_STATE) {
             rowScore = rowScore_player;
@@ -474,44 +475,45 @@ public class BoardStatus {
         }
 
         for (int y=0; y<rows; y++) {
+            prevStart = -1;
             for (int x=0; x<columns; x++) {
                 if (rowScore[x][y].aligned != target) { continue; }
-                if (isFreeAt(x, y)) {
+                if (isFreeAt(x, y) && prevStart != rowScore[x][y].start) {
+                    prevStart = rowScore[x][y].start;
                     out[rowScore[x][y].moves]++;
-                    x = rowScore[x][y].end; // Salta alla fine del gruppo appena elaborato
                 }
             }
         }
 
         for (int x=0; x<columns; x++) {
+            prevStart = -1;
             for (int y=0; y<rows; y++) {
                 if (columnScore[x][y].aligned != target) { continue; }
-                if (isFreeAt(x, y)) {
+                if (isFreeAt(x, y) && prevStart != columnScore[x][y].start) {
+                    prevStart = columnScore[x][y].start;
                     out[columnScore[x][y].moves]++;
-                    y = columnScore[x][y].end; // Salta alla fine del gruppo appena elaborato
                 }
             }
         }
 
         for (int y=0; y<rows; y++) {
             int i=0, j=y;
+            prevStart = -1;
             while (isValidCell(i, j)) {
-                if (mainDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
-                    int end = mainDiagonalScore[i][j].end;
+                if (mainDiagonalScore[i][j].aligned == target && isFreeAt(i, j) && prevStart != mainDiagonalScore[i][j].start) {
+                    prevStart = mainDiagonalScore[i][j].start;
                     out[mainDiagonalScore[i][j].moves]++;
-                    j = j + (end - i); i = end; // Salta alla fine del gruppo appena elaborato
                 }
                 i++; j++;
             }
         }
         for (int x=1; x<columns; x++) {
             int i=x, j=0;
+            prevStart = -1;
             while (isValidCell(i, j)) {
-                if (mainDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
-                    int end = mainDiagonalScore[i][j].end;
-                    int old_i = i;
+                if (mainDiagonalScore[i][j].aligned == target && isFreeAt(i, j) && isFreeAt(i, j) && prevStart != mainDiagonalScore[i][j].start) {
+                    prevStart = mainDiagonalScore[i][j].start;
                     out[mainDiagonalScore[i][j].moves]++;
-                    i = end + x; j = j + (i - old_i); // Salta alla fine del gruppo appena elaborato
                 }
                 i++; j++;
             }
@@ -519,22 +521,22 @@ public class BoardStatus {
 
         for (int y=0; y<rows; y++) {
             int i=columns-1, j=y;
+            prevStart = -1;
             while (isValidCell(i, j)) {
-                if (secondaryDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
-                    int end = secondaryDiagonalScore[i][j].end;
+                if (secondaryDiagonalScore[i][j].aligned == target && isFreeAt(i, j) && prevStart != secondaryDiagonalScore[i][j].start) {
+                    prevStart = secondaryDiagonalScore[i][j].start;
                     out[secondaryDiagonalScore[i][j].moves]++;
-                    i = i - end; j = j + end; // Salta alla fine del gruppo appena elaborato
                 }
                 i--; j++;
             }
         }
         for (int x=columns-2; x>=0; x--) {
             int i=x, j=0;
+            prevStart = -1;
             while (isValidCell(i, j)) {
-                if (secondaryDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
-                    int end = secondaryDiagonalScore[i][j].end;
+                if (secondaryDiagonalScore[i][j].aligned == target && isFreeAt(i, j) && prevStart != secondaryDiagonalScore[i][j].start) {
+                    prevStart = secondaryDiagonalScore[i][j].start;
                     out[secondaryDiagonalScore[i][j].moves]++;
-                    i = i - end; j = j + end; // Salta alla fine del gruppo appena elaborato
                 }
                 i--; j++;
             }
@@ -559,42 +561,44 @@ public class BoardStatus {
             mainDiagonalScore = mainDiagonalScore_opponent;
             secondaryDiagonalScore = secondaryDiagonalScore_opponent;
         }
+        int prevStart;
 
+        prevStart = -1;
         for (int x=0; x<columns; x++) {
             if (rowScore[x][toCheckY].aligned != target) { continue; }
-            if (isFreeAt(x, toCheckY)) {
+            if (isFreeAt(x, toCheckY) && prevStart != rowScore[x][toCheckY].start) {
+                prevStart = rowScore[x][toCheckY].start;
                 out[rowScore[x][toCheckY].moves]++;
-                x = rowScore[x][toCheckY].end; // Salta alla fine del gruppo appena elaborato
             }
         }
 
+        prevStart = -1;
         for (int y=0; y<rows; y++) {
             if (columnScore[toCheckX][y].aligned != target) { continue; }
-            if (isFreeAt(toCheckX, y)) {
+            if (isFreeAt(toCheckX, y) && prevStart != columnScore[toCheckX][y].start) {
+                prevStart = columnScore[toCheckX][y].start;
                 out[columnScore[toCheckX][y].moves]++;
-                y = columnScore[toCheckX][y].end; // Salta alla fine del gruppo appena elaborato
             }
         }
 
         Coord diagonalStart = getMainDiagonalStart(toCheckX, toCheckY);
         int i=diagonalStart.x, j=diagonalStart.y;
+        prevStart = -1;
         while (isValidCell(i, j)) {
-            if (mainDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
-                int end = mainDiagonalScore[i][j].end;
-                int old_i = i;
+            if (mainDiagonalScore[i][j].aligned == target && isFreeAt(i, j) && prevStart != mainDiagonalScore[i][j].start) {
+                prevStart = mainDiagonalScore[i][j].start;
                 out[mainDiagonalScore[i][j].moves]++;
-                i = end + diagonalStart.x; j = j + (i - old_i); // Salta alla fine del gruppo appena elaborato
             }
             i++; j++;
         }
 
         diagonalStart = getSecondaryDiagonalStart(toCheckX, toCheckY);
         i=diagonalStart.x; j=diagonalStart.y;
+        prevStart = -1;
         while (isValidCell(i, j)) {
-            if (secondaryDiagonalScore[i][j].aligned == target && isFreeAt(i, j)) {
-                int end = secondaryDiagonalScore[i][j].end;
+            if (secondaryDiagonalScore[i][j].aligned == target && isFreeAt(i, j) && prevStart != secondaryDiagonalScore[i][j].start) {
+                prevStart = secondaryDiagonalScore[i][j].start;
                 out[secondaryDiagonalScore[i][j].moves]++;
-                i = i - end; j = j + end; // Salta alla fine del gruppo appena elaborato
             }
             i--; j++;
         }
@@ -632,11 +636,16 @@ public class BoardStatus {
     }
 
     public static void main(String[] args) {
-        int M = 7, N = 7, K = 5;
+        int M = 5, N = 5, K = 4;
         BoardStatus bs = new BoardStatus(M, N, K, MNKCellState.P1);
 
 
         bs.setAt(3, 1, MNKCellState.P2);
+        bs.setAt(2, 3, MNKCellState.P2);
+        bs.setAt(1, 3, MNKCellState.P2);
+
+
+        /*bs.setAt(3, 1, MNKCellState.P2);
         bs.setAt(4, 1, MNKCellState.P1);
         bs.setAt(5, 1, MNKCellState.P2);
 
@@ -656,24 +665,30 @@ public class BoardStatus {
         bs.setAt(0, 6, MNKCellState.P2);
         bs.setAt(1, 6, MNKCellState.P2);
 
-        bs.setAt(3, 4, MNKCellState.P1);
+        bs.setAt(3, 4, MNKCellState.P1);*/
 
         bs.generateGlobalMovesToWin();
 
         System.out.println(bs);
 
-        int[] aa = bs.getAllPossibleWinningScenariosCountAt(3, 4, MNKCellState.P1);
+        int[] aa = bs.getAllPossibleWinningScenariosCount(MNKCellState.P2);
 
         for (int i=1; i<aa.length; i++) {
             System.out.println(i + ") " + aa[i]);
         }
 
-        for (int y=0; y<bs.rows; y++) {
+        /*int[] aa = bs.getAllPossibleWinningScenariosCountAt(3, 4, MNKCellState.P1);
+
+        for (int i=1; i<aa.length; i++) {
+            System.out.println(i + ") " + aa[i]);
+        }*/
+
+        /*for (int y=0; y<bs.rows; y++) {
             for (int x=0; x<bs.columns; x++) {
                 System.out.print(String.format("%20s", bs.rowScore_player[x][y]));
             }
             System.out.println();
-        }
+        }*/
 
         //System.out.println(bs.isVeryDangerous(0, 2, MNKCellState.P2));
 
