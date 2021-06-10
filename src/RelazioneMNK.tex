@@ -3,6 +3,7 @@
 \usepackage[italian]{babel}
 \usepackage[document]{ragged2e}
 \usepackage{amsfonts, amssymb, amsmath}
+\usepackage{float}
 \usepackage{mathtools}
 \usepackage[margin=3.5cm]{geometry}
 
@@ -61,11 +62,150 @@
 \section*{Introduzione}
 \justify
 Il progetto MNK-Game consiste nella realizzazione di un algoritmo in grado di giocare a una versione generalizzata del Tris.\\
-La criticità maggiore risiede nella valutazione delle possibili mosse da eseguire che crescono esponenzialmente nel progredire del gioco.\\
-Contemporaneamente, l'algoritmo deve avere la capacità di effettuare scelte qualitativamente accettabili.
+La criticità maggiore risiede nella valutazione delle possibili mosse da eseguire che crescono esponenzialmente nel progredire del gioco, rendendo impossibile la risoluzione del problema tramite forza bruta.\\
+Contemporaneamente però, l'algoritmo deve avere, come requisito minimo, la capacità di effettuare scelte qualitativamente accettabili.
 
 \section*{Scelte progettuali}
+\subsection*{Classi implementate}
+Le classi implementate dall'algoritmo sono le seguenti:
+\begin{table}[H]	% [H] per non stampare la tabella a inizio file. Richiede package float
+\centering			% centra la tabella
+\def\arraystretch{1.5}
+\begin{tabular}{|l|p{3in}|}	% 2 colonne separate da | allineate a sinistra con la seconda colonna "paragrafo da 3 inch"
+\hline	% hline per la linea orizzontale
+\texttt{OurPlayer} & Implementa l'interfaccia \texttt{MNKPlayer} \\ \hline
+\texttt{Node} & Rappresenta un nodo dell'albero di gioco \\ \hline
+\texttt{GameTree} & Contiene l'albero di gioco e implementa i metodi per manipolarlo \\ \hline
+\texttt{Matrix} & Rappresenta una configurazione della griglia di gioco \\ \hline
+\texttt{BoardStatus} & Permette di ricavare informazioni su una configurazione di gioco \\ \hline
+\texttt{Coord} & Rappresenta una coordinata \\ \hline
+\texttt{EstimatedPosition} & Descrive una possibile mossa quantificata da un punteggio \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection*{Titolooooooooooooooooooooooooooooooooooooooooooooooooo}
+Data l'impossibilità di generare tutti i possibili scenari, si rende necessario realizzare una funzione euristica in grado di prendere in considerazione solo le mosse realmente proficue.\\
+Le funzioni euristiche di questo algoritmo si basano sul numero di allineamenti effettivi e possibili del giocatore e dell'avversario.
+
+\subsection*{Quantificazione degli allineamenti}
+\subsubsection*{Descrizione}
+Per quantificare i possibili allineamenti del giocatore e dell'avversario, viene utilizzato il metodo \texttt{getScoresArray} della classe \texttt{BoardStatus} che implementa un algoritmo basato sulla programmazione dinamica che prende in input il vettore $I[0 .. n-1]$ contenente la configurazione di gioco di ciascuna cella rispetto ad una direzione rappresentata da \texttt{PLAYER}, \texttt{OPPONENT}, \texttt{FREE} e restituisce il vettore $S[0 .. n-1]$, ove $S[i]$ contiene la tupla di interi:\\
+\centerline{(\texttt{celle allineabili}, \texttt{mosse mancanti vittoria}, \texttt{punto inizio allineamento})}\\
+che rappresentano le informazioni sulla possibile mossa all'$i$-esima cella. Le seguenti equazioni di ricorrenza descrivono le varie casistiche previste dall'algoritmo:\\
+\begin{equation*}
+	S[0] \leftarrow
+	\begin{cases}
+	(0,0,-1) & \mbox{se } I[0]=\mbox{\texttt{OPPONENT}} \\ 
+	(1,0,-1) & \mbox{se } I[0]=\mbox{\texttt{PLAYER}} \\
+	(1,1,-1) & \mbox{se } I[0]=\mbox{\texttt{FREE}}
+	\end{cases}
+\end{equation*}
+% ---------------- DEFINIRE K ----------------
+\begin{equation*}
+\mathclap {
+	S[i] \leftarrow
+	\begin{cases}
+	(0,0,-1) & \mbox{se } I[i]=\mbox{\texttt{OPPONENT}} \\ 
+	(S[i-1].\text{aligned}+1,S[i-1].\text{moves},-1) & \mbox{se } S[i-1].\text{first} < K \texttt{ AND } I[i] = \texttt{PLAYER}\\
+	(S[i-1].\text{aligned}+1,S[i-1].\text{moves}+1,-1) & \mbox{se } S[i-1].\text{first} < K \texttt{ AND } I[i] = \texttt{FREE}\\
+	\end{cases}
+}
+\end{equation*}
+
+\begin{equation*}
+\mathclap {
+	\text{se } I[i]=\texttt{PLAYER}\Rightarrow S[i] \leftarrow
+	\begin{cases}
+	(S[i-1].\text{aligned},S[i-1].\text{moves}-1,i-(K-1)) & \mbox{se } I[i-K] =\texttt{FREE}\\
+	(S[i-1].\text{aligned},S[i-1].\text{moves},i-(K-1)) & \mbox{se } I[i-K] =\texttt{PLAYER}\\
+	\end{cases}
+}
+\end{equation*}
+
+\begin{equation*}
+\mathclap {
+	\text{se } I[i]=\texttt{FREE}\Rightarrow S[i] \leftarrow
+	\begin{cases}
+	(S[i-1].\text{aligned},S[i-1].\text{moves},i-(K-1)) & \mbox{se } I[i-K] =\texttt{FREE}\\
+	(S[i-1].\text{aligned},S[i-1].\text{moves}+1,i-(K-1)) & \mbox{se } I[i-K] =\texttt{PLAYER}\\
+	\end{cases}
+}
+\end{equation*}
+\\
+Per trovare il numero di mosse ottimali per ciascuna cella, alla posizione $i$-esima, avviene una fase di propagazione del punteggio:
+\begin{algorithm*}
+\SetAlgoLined
+ \For{$j \gets i-1$ to $i-K+1$}{
+ \textit{// L'allineamento viene interrotto da una mossa dell'avversario\\}
+  \If{$I[j] = \texttt{OPPONENT}$}{
+  	\texttt{break}
+  	}
+  \textit{// Le mosse precedenti sono migliori, non serve propagare\\}
+  \If{$S[j].\text{aligned} = K \texttt{ AND } S[j].\text{moves} < S[i].\text{moves}$}{
+   	\texttt{break}
+   }
+   $S[i-j] = S[i]$
+ }
+\end{algorithm*}
+\subsubsection*{Costo computazionale}
+L'algoritmo deve necessariamente iterare per intero il vettore $I$ con un costo di $\Theta(I.\text{length})$, in aggiunta, per ciascun ciclo c'è la possibilità di dover propagare la tupla calcolata alle celle antecedenti.\\
+Nel caso pessimo, quindi, si ha un costo computazionale di O$(I.\texttt{length} \cdot K)$, ovvero la propagazione avviene per ogni posizione.
+\subsection*{Generazione punteggi}
+\subsubsection*{Descrizione}
+La classe \texttt{BoardStatus} implementa le funzioni \texttt{generateMovesToWinAt} e \texttt{generateGlobalMovesToWin} che utilizzano il metodo \texttt{getScoresArray} per generare le tuple rispetto ad una riga, colonna o diagonale.\\
+In particolare: 
+\begin{itemize}
+\setlength\itemsep{0.05cm}
+	\item \texttt{generateMovesToWinAt} prende in input una coordinata e genera i punteggi della riga, colonna e diagonali che passano per quel punto
+	\item \texttt{generateGlobalMovesToWin} genera il punteggio per tutte le posizioni rispetto a tutte le direzioni
+\end{itemize}
+L'output viene memorizzato in una matrice interna alla classe per evitare di dover rigenerare le tuple nel caso si dovesse accedere a celle adiacenti.
+\subsubsection*{Costo computazionale}
+La funzione \texttt{generateMovesToWinAt}, nel caso pessimo, ha costo O$(\texttt{max}\{M, N\} \cdot K) = \text{O}(MK+NK)$ dato dalla necessità di iterare tutte le direzioni rispetto ad una coordinata (quindi ha maggior peso la riga/colonna con più celle).\\
+Nel caso ottimo, invece, ha costo $\Theta(1)$, ovvero quando gli score sono già stati generati e memorizzati nelle matrici.\\
+La funzione \texttt{generateGlobalMovesToWin}, nel caso pessimo, ha costo O$(MNK)$ perché bisogna iterare l'intera griglia di gioco.\\
+
+\subsection*{Albero di gioco}
+Per la valutazione e la scelta della mossa da eseguire viene implementato un albero di gioco gestito nella classe \texttt{GameTree}.\\
+Ciascun nodo dell'albero contiene:
+\begin{itemize}
+\setlength\itemsep{0.05cm}
+	\item La descrizione del nodo rappresentato
+	\item Il riferimento al nodo padre e una lista concatenata contenente i figli
+	\item Un punteggio euristico
+\end{itemize}
+
+\subsection*{Generazione parziale dell'albero}
+Il numero dei nodi generati dell'albero di gioco cresce in modo esponenziale all'aumentare dell'altezza;
+per tale ragione è impossibile generare l'intero albero per configurazioni di gioco con un elevato numero di celle.\\
+La generazione dell'albero deve essere quindi limitata sia in altezza che nel numero di nodi da elaborare.\\
+All'interno della classe \texttt{GameTree} sono quindi presenti le costanti \texttt{MAX\_DEPTH} e \texttt{MIN\_EVAL} rispettivamente l'altezza massima generabile e il numero indicativo di figli di ciascun nodo (variabile in base al numero di scenari favorevoli o sfavorevoli).\\
+Al termine di ogni fase di generazione dell'albero, la struttura viene elaborata dall'algoritmo \texttt{AlphaBeta Pruning} per propagare i punteggi delle foglie alla radice ed eventualmente tagliare determinati sottoalberi inconvenienti.\\
+\textbf{CONTINUARE}\\
+Per mantenere costante in altezza l'albero, in seguito alla selezione di una mossa, viene richiamata la funzione \texttt{extendLeaves(Node root)} che estende le foglie dell'albero radicato nel nodo in input.
+
+\subsection*{Punteggio euristico a configurazioni di gioco non terminali}
+\subsubsection*{Descrizione}
+La classe \texttt{GameTree} implementa il metodo \texttt{setHeuristicScoreOf} che prende in input un nodo dell'albero, un oggetto \texttt{BoardStatus} e un flag per indicare chi deve eseguire la prossima mossa e imposta a quel nodo un punteggio euristico.\\
+L'implementazione prevede di generare i punteggi per tutte le celle e di ricavare, sia per il giocatore che per l'avversario, il numero di possibili scenari vincenti che necessitano di piazzare da $1$ a $n$ mosse e con queste calcola il punteggio finale assegnando un peso per ciascuna tipologia.\\
+Vengono quindi gestite tre casistiche: 
+\begin{enumerate}
+\setlength\itemsep{0.05cm}
+	\item Se è il turno del giocatore e ha la possibilità di vincere immediatamente, viene assegnato il punteggio vincente
+	\item Se è il turno dell'avversario e ha la possibilità di vincere immediatamente, viene assegnato il punteggio perdente
+	\item Altrimenti viene assegnata la differenza tra il punteggio del giocatore e quello dell'avversario.
+\end{enumerate}
+\subsubsection*{Costo computazionale}
+La funzione \texttt{setHeuristicScoreOf} ha costo O$(MNK)$ dato dalla chiamata al metodo \texttt{generateGlobalMovesToWin}.
+
+\subsection*{Valutazione mosse "interessanti"}
+\textbf{DA RIFARE TUTTA DA CAPO :)}\\
+Per ricercare mosse successive a partire da un nodo il cui stato di gioco non sia terminale, viene richiamata la funzione \texttt{getInterestingPositions} che restituisce una coda con priorità di posizioni organizzate in ordine crescente di punteggio.\\
+La funzione \texttt{getInterestingPositions(Node node, BoardStatus board)} prende in input un nodo ed effettua la scansione di tutte le celle adiacenti alle posizioni già marcate e di queste ne calcola il punteggio euristico relativo sia al giocatore che all'avversario e li inserisce nella coda.\\
+Quindi, all'interno della funzione \texttt{createTree} vengono estratte dalla coda tutte le mosse con un punteggio minore o uguale a \texttt{SCORE\_THRESHOLD} ed eventualmente altre mosse fino al raggiungimento del valore minimo \texttt{MIN\_EVAL} o fino a coda vuota.
+
 \subsection*{Interfaccia \texttt{MNKPlayer}}
+\textbf{DA AGGIUSTARE (POSIZIONE)}\\
 % ---------------------------------- CAMBIARE NOME AD OURPLAYER ----------------------------------
 L'interfaccia \texttt{MNKPlayer} viene implementata dalla classe \texttt{OurPlayer} che contiene, tra gli attributi, un oggetto \texttt{GameTree}.\\
 La funzione \texttt{selectCell}, quindi, restituisce la mossa da eseguire basandosi sullo stato dell'oggetto \texttt{GameTree}:
@@ -86,88 +226,6 @@ La funzione \texttt{selectCell}, quindi, restituisce la mossa da eseguire basand
 	mossaScelta $\gets$ gameTree.nextMove()
 }
 \end{algorithm*}
-
-\subsection*{Albero di gioco}
-Per la valutazione e la scelta della mossa da eseguire viene implementato un albero di gioco gestito nella classe \texttt{GameTree}.\\
-Ciascun nodo dell'albero contiene:
-\begin{itemize}
-\setlength\itemsep{0.05cm}
-	\item La descrizione del nodo rappresentato
-	\item Il riferimento al nodo padre e una lista concatenata contenente i figli
-	\item Un punteggio euristico
-\end{itemize}
-
-\subsection*{Generazione parziale dell'albero}
-Il numero dei nodi generati dell'albero di gioco cresce in modo esponenziale all'aumentare dell'altezza;
-per tale ragione è impossibile generare l'intero albero per configurazioni di gioco con un elevato numero di celle.\\
-La generazione dell'albero deve essere quindi limitata sia in altezza che nel numero di nodi da elaborare.\\
-All'interno della classe \texttt{GameTree} sono quindi presenti le costanti \texttt{MAX\_DEPTH} e \texttt{MIN\_EVAL} rispettivamente l'altezza massima generabile e il numero indicativo di figli di ciascun nodo (variabile in base al numero di scenari favorevoli o sfavorevoli).\\
-Al termine di ogni fase di generazione dell'albero, la struttura viene elaborata dall'algoritmo \texttt{AlphaBeta Pruning} per propagare i punteggi delle foglie alla radice ed eventualmente tagliare determinati sottoalberi inconvenienti.\\
-Per mantenere costante in altezza l'albero, in seguito alla selezione di una mossa, viene richiamata la funzione \texttt{extendLeaves(Node root)} che estende le foglie dell'albero radicato nel nodo in input.
-
-\subsection*{Euristica sui punteggi}
-Tramite la classe \texttt{BoardStatus} è possibile rappresentare ed effettuare la stima del possibile esito di una configurazione di gioco.\\
-Tale punteggio euristico viene calcolato tramite un algoritmo basato sulla programmazione dinamica che prende in input il vettore $M[0 .. n-1]$ contenente la configurazione di gioco di ciascuna cella rappresentata da \texttt{PLAYER}, \texttt{OPPONENT}, \texttt{FREE} e restituisce il vettore $S[0 .. n-1]$, ove $S[i]$ contiene una coppia di interi rappresentanti il numero di celle allineabili e il numero di mosse necessarie per vincere se si seleziona l'$i$-esima cella. Le seguenti equazioni di ricorrenza descrivono le varie casistiche previste dall'algoritmo:
-\begin{equation*}
-	S[0] \leftarrow
-	\begin{cases}
-	(0,0) & \mbox{se } M[0]=\mbox{\texttt{OPPONENT}} \\ 
-	(1,0) & \mbox{se } M[0]=\mbox{\texttt{PLAYER}} \\
-	(1,1) & \mbox{se } M[0]=\mbox{\texttt{FREE}}
-	\end{cases}
-\end{equation*}
-% ---------------- DEFINIRE K ----------------
-\begin{equation*}
-\mathclap {
-	S[i] \leftarrow
-	\begin{cases}
-	(0,0) & \mbox{se } M[i]=\mbox{\texttt{OPPONENT}} \\ 
-	(S[i-1].\text{aligned}+1,S[i-1].\text{moves}) & \mbox{se } S[i-1].\text{first} < K \texttt{ AND } M[i] = \texttt{PLAYER}\\
-	(S[i-1].\text{aligned}+1,S[i-1].\text{moves}+1) & \mbox{se } S[i-1].\text{first} < K \texttt{ AND } M[i] = \texttt{FREE}\\
-	\end{cases}
-}
-\end{equation*}
-
-\begin{equation*}
-\mathclap {
-	\text{se } M[i]=\texttt{PLAYER}\Rightarrow S[i] \leftarrow
-	\begin{cases}
-	(S[i-1].\text{aligned},S[i-1].\text{moves}-1) & \mbox{se } M[i-K] =\texttt{FREE}\\
-	(S[i-1].\text{aligned},S[i-1].\text{moves}) & \mbox{se } M[i-K] =\texttt{PLAYER}\\
-	\end{cases}
-}
-\end{equation*}
-
-\begin{equation*}
-\mathclap {
-	\text{se } M[i]=\texttt{FREE}\Rightarrow S[i] \leftarrow
-	\begin{cases}
-	(S[i-1].\text{aligned},S[i-1].\text{moves}) & \mbox{se } M[i-K] =\texttt{FREE}\\
-	(S[i-1].\text{aligned},S[i-1].\text{moves}+1) & \mbox{se } M[i-K] =\texttt{PLAYER}\\
-	\end{cases}
-}
-\end{equation*}
-\\
-Per trovare il numero di mosse ottimale per ciascuna cella, alla posizione $i$-esima, avviene una fase di propagazione del punteggio:
-\begin{algorithm*}
-\SetAlgoLined
- \For{$j \gets i-1$ to $i-K+1$}{
- \textit{// L'allineamento viene interrotto da una mossa dell'avversario\\}
-  \If{$M[j] = \texttt{OPPONENT}$}{
-  	\texttt{break}
-  	}
-  \textit{// Le mosse precedenti sono migliori, non serve propagare\\}
-  \If{$S[j].\text{aligned} = K \texttt{ AND } S[j].\text{moves} < S[i].\text{moves}$}{
-   	\texttt{break}
-   }
-   $S[i-j] = S[i]$
- }
-\end{algorithm*}
-
-\subsection*{Valutazione mosse "interessanti"}
-Per ricercare mosse successive a partire da un nodo il cui stato di gioco non sia terminale, viene richiamata la funzione \texttt{getInterestingPositions} che restituisce una lista con priorità di posizioni organizzate in ordine crescente di punteggio.\\
-La funzione \texttt{getInterestingPositions(Node node, BoardStatus board)} prende in input un nodo ed effettua la scansione di tutte le celle adiacenti alle posizioni già marcate e di queste ne calcola il punteggio euristico relativo sia al giocatore che all'avversario e li inserisce nella coda.\\
-Quindi, all'interno della funzione \texttt{createTree} vengono estratte dalla coda tutte le mosse con un punteggio minore o uguale a \texttt{SCORE\_THRESHOLD} ed eventualmente altre mosse fino al raggiungimento del valore minimo \texttt{MIN\_EVAL} o fino a coda vuota.
 
 \section*{Conclusione}
 Il progetto è stato caruccio ma non lo rifarei.
