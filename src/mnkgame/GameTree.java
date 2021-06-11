@@ -1,6 +1,6 @@
 package mnkgame;
 
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.PriorityQueue;
 
 /**
@@ -17,10 +17,13 @@ public class GameTree {
     private final MNKGameState WIN_STATE, LOSS_STATE;
     private final int WIN_SCORE, LOSS_SCORE, DRAW_SCORE;
 
-    private static int MAX_DEPTH = 9; // Va messo dispari!!!1!11!!
+    private int MAX_HEIGHT;
 
     final int PRIORITY_1, PRIORITY_2, PRIORITY_3, PRIORITY_4;
 
+    /**
+     * @implNote Costo: Θ(1)
+     * */
     public GameTree(int M, int N, int K, boolean first) {
         this.root = null;
         this.rows = M;
@@ -28,14 +31,15 @@ public class GameTree {
         this.target = K;
 
         this.first = first;
-        this.canExtend = true;
+        this.canExtend = false;
         this.MY_STATE = first ? MNKCellState.P1 : MNKCellState.P2;
         this.OPPONENT_STATE = first ? MNKCellState.P2 : MNKCellState.P1;
         this.WIN_STATE = first ? MNKGameState.WINP1 : MNKGameState.WINP2;
         this.LOSS_STATE = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
 
-        this.WIN_SCORE = 1000000;
-        this.LOSS_SCORE = -1000000;
+        this.MAX_HEIGHT = 9; // Va messo dispari
+        this.WIN_SCORE = 10000000;
+        this.LOSS_SCORE = -10000000;
         this.DRAW_SCORE = 0;
 
         this.PRIORITY_1 = target * 10000;
@@ -44,14 +48,24 @@ public class GameTree {
         this.PRIORITY_4 = target * 100;
     }
 
+    /**
+     * @implNote Costo: Θ(1)
+     * */
     public boolean isEmpty() {
         return root == null;
     }
 
+    /**
+     * @implNote Costo: Θ(1)
+     * */
     private boolean isValidCell(int x, int y) {
         return (x >= 0 && x < columns) && (y >= 0 && y < rows);
     }
 
+    /**
+     * @implNote Costo (pessimo): O(p^h)  p = numero medio di mosse  h = altezza albero
+     * @implNote Costo (ottimo): O(sqrt(p^h))  p = numero medio di mosse  h = altezza albero
+     * */
     private int alphabeta(Node node, boolean myNode, int alpha, int beta) {
         if (node.isLeaf()) {
             return node.score;
@@ -85,8 +99,8 @@ public class GameTree {
     }
 
     /**
-     * Restituisce il punteggio di un nodo contenente uno stato di gioco terminale
-     * @implNote Costo: O(1)
+     * Imposta il punteggio di un nodo contenente uno stato di gioco terminale
+     * @implNote Costo: Θ(1)
      * */
     private void setScoreOf(Node node, MNKGameState gameState) {
         if (gameState == WIN_STATE) {
@@ -98,53 +112,44 @@ public class GameTree {
         else {
             node.score = DRAW_SCORE;
         }
+        node.endState = true;
     }
 
     /**
-     * Imposta un punteggio euristico al nodo
+     * Imposta un punteggio euristico alla configurazione di un nodo
      * @implNote Costo: O(M*N*K)
      */
     private void setHeuristicScoreOf(Node node, BoardStatus board, MNKCellState whoHasToPlay) {
-        int playerScore=0, opponentScore=0;
+        int playerScore = 0, opponentScore = 0;
         int score = 0;
 
         board.generateGlobalMovesToWin();                                                                       // O(M*N*K)
         int[] playerPossibilities = board.getAllPossibleWinningScenariosCount(MY_STATE);                        // O(M*N)
         int[] opponentPossibilities = board.getAllPossibleWinningScenariosCount(OPPONENT_STATE);                // O(M*N)
 
-        int weight = 10000;
-        for (int i=1; i<=2 && i<playerPossibilities.length; i++) {
-            playerScore += playerPossibilities[i] * weight;
-            opponentScore += opponentPossibilities[i] * weight;
-            weight = weight / 10;
+        // Valuta il numero di mosse a cui mancano da 1 a 3 mosse per vincere
+        int[] weight = new int[]{ 0, 100000, 1000, 1 };
+        for (int i=1; i<=3 && i<playerPossibilities.length; i++) {
+            playerScore += playerPossibilities[i] * weight[i];
+            opponentScore += opponentPossibilities[i] * weight[i];
         }
 
-        if (playerScore == 0 && opponentScore == 0 && playerPossibilities.length > 3) {
+        /*if (playerScore == 0 && opponentScore == 0 && playerPossibilities.length > 3) {
             for (int i=3; i<=4 && i<playerPossibilities.length; i++) {
                 playerScore += playerPossibilities[i] * weight;
                 opponentScore += opponentPossibilities[i] * weight;
                 weight = weight / 10;
             }
+        }*/
+
+        if (whoHasToPlay == MY_STATE && playerPossibilities[1] != 0) {
+            score = WIN_SCORE;
         }
-
-        /**
-         * Rivedere coso ^^^^^^^^^^^^^^^^
-         * */
-
-        if (whoHasToPlay == MY_STATE && playerPossibilities[1] != 0) { score = WIN_SCORE; }
-        else if (whoHasToPlay == OPPONENT_STATE && opponentPossibilities[1] != 0) { score = LOSS_SCORE; }
+        else if (whoHasToPlay == OPPONENT_STATE && opponentPossibilities[1] != 0) {
+            score = LOSS_SCORE;
+        }
         else {
             score = playerScore - opponentScore;
-            /*if (playerScore > opponentScore) { score = playerScore; }
-            else if (opponentScore > playerScore) { score = -opponentScore; }
-            else {
-                if (whoHasToPlay == MY_STATE) {
-                    score = playerScore;
-                }
-                else {
-                    score = -opponentScore;
-                }
-            }*/
         }
 
         node.score = score;
@@ -152,10 +157,10 @@ public class GameTree {
 
     /**
      * Restituisce una coda con priorità contenente le celle adiacenti a quelle già piazzate, ordinate per importanza
-     * @implNote Costo: O(8*h*(max{M, N} * K))
+     * @implNote Costo: O( h(MK + NK) + h*log(h) ) = O( h(MK + NK + log(h)) )
      */
     public PriorityQueue<EstimatedPosition> getAdjacency(Node node, BoardStatus board, MNKCellState state) {
-        boolean[][] visited = new boolean[columns][rows];
+        HashMap<Coord, Boolean> visited = new HashMap<>();
         PriorityQueue<EstimatedPosition> out = new PriorityQueue<>();
 
         final MNKCellState PLAYING_STATE = state;
@@ -163,73 +168,74 @@ public class GameTree {
 
         Node iter = node;
 
-        while (iter != null) {
-            for (int i = -1; i <= 1; i++) {
-                for (int j = -1; j <= 1; j++) {
-                    if (i == 0 && j == 0) { continue; }
+        while (iter != null) {                                                                                                      // -|
+            for (int i = -1; i <= 1; i++) {                                                                                         //  | O(8 * h) = O(h)
+                for (int j = -1; j <= 1; j++) {                                                                                     //  | h = altezza albero
+                    if (i == 0 && j == 0) { continue; }                                                                             // -|
 
                     int toVisit_x = iter.action.j + j;
                     int toVisit_y = iter.action.i + i;
+                                                                                                                                    // O(1) utilizzando il costo medio delle hash table
+                    if (!isValidCell(toVisit_x, toVisit_y) || !board.isFreeAt(toVisit_x, toVisit_y) || visited.get(new Coord(toVisit_x, toVisit_y)) != null) { continue; }
+                    visited.put(new Coord(toVisit_x, toVisit_y), true);                                                             // O(1) utilizzando il costo medio delle hash table
 
-                    if (!isValidCell(toVisit_x, toVisit_y) || !board.isFreeAt(toVisit_x, toVisit_y) || visited[toVisit_x][toVisit_y]) { continue; }
-                    visited[toVisit_x][toVisit_y] = true;
-
-                    /**
-                     *
+                    /*
                      * Ordine di priorità:
                      * - Mossa vincente
                      * - Blocco una mossa vincente dell'avversario
-                     * - Imposto un vicolo cieco per me
+                     * - Imposto un vicolo cieco a mio favore
                      * - Blocco un vicolo cieco dell'avversario
                      * - Scelgo la mossa migliore per me
-                     *
                      * */
 
-                    board.generateMovesToWinAt(toVisit_x, toVisit_y);
+                    board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                               // O(max{M, N}*K)
                     int playerMovesToWin = board.getMovesToWinAt(toVisit_x, toVisit_y, PLAYING_STATE);
                     int oppositeMovesToWin = board.getMovesToWinAt(toVisit_x, toVisit_y, WAITING_STATE);
 
-                    int openDirections = board.numberOfOpenDirectionsAt(toVisit_x, toVisit_y, PLAYING_STATE); // Serve eventualmente per dopo
-
                     EstimatedPosition estimation = null;
 
+                    // Mossa vincente per me
                     if (playerMovesToWin == 1) {
                         estimation = new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_1);
-                    } else if (oppositeMovesToWin == 1) {
+                    }
+                    // Blocca mossa vincente dell'avversario
+                    else if (oppositeMovesToWin == 1) {
                         estimation =  new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_2);
                     }
 
-                    if (playerMovesToWin == 2) { // Cerco un vicolo cieco a mio favore
-                        board.setAt(toVisit_x, toVisit_y, PLAYING_STATE);
-                        board.generateMovesToWinAt(toVisit_x, toVisit_y);
-                        int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, PLAYING_STATE);
-                        board.removeAt(toVisit_x, toVisit_y);
+                    // Cerco un vicolo cieco a mio favore
+                    if (playerMovesToWin == 2) {
+                        board.setAt(toVisit_x, toVisit_y, PLAYING_STATE);                                                           // O(max{M, N})
+                        board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                           // O(max{M, N}*K)
+                        int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, PLAYING_STATE);     // O(max{M, N})
+                        board.removeAt(toVisit_x, toVisit_y);                                                                       // O(max{M, N})
 
                         if (possibilities[1] > 1) {
                             estimation = new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_3);
                         }
                     }
 
-                    if (estimation == null && oppositeMovesToWin == 2) { // Cerco un vicolo cieco a mio sfavore
-                        // Controllo la situazione se l'altro mette la mossa in questa posizione
-                        board.setAt(toVisit_x, toVisit_y, WAITING_STATE);
-                        board.generateMovesToWinAt(toVisit_x, toVisit_y);
-                        int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, WAITING_STATE);
-                        board.removeAt(toVisit_x, toVisit_y);
+                    // Cerco un vicolo cieco a mio sfavore
+                    if (estimation == null && oppositeMovesToWin == 2) {
+                        board.setAt(toVisit_x, toVisit_y, WAITING_STATE);                                                           // O(max{M, N})
+                        board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                           // O(max{M, N}*K)
+                        int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, WAITING_STATE);     // O(max{M, N})
+                        board.removeAt(toVisit_x, toVisit_y);                                                                       // O(max{M, N})
 
                         if (possibilities[1] > 1) {
                             estimation = new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_4);
                         }
                     }
 
+                    // Valuto la qualità della mossa non critica
                     if (estimation == null) {
                         int aligned = target - playerMovesToWin + 1;
                         int blocked = target - oppositeMovesToWin;
 
-                        estimation = new EstimatedPosition(toVisit_x, toVisit_y, aligned, blocked, openDirections);
+                        estimation = new EstimatedPosition(toVisit_x, toVisit_y, aligned, blocked);
                     }
 
-                    out.add(estimation);
+                    out.add(estimation);                                                                                            // Costo complessivo: O( log((8h)!) ) = O(log(h!)) = O( h*log(h) )
                 }
             }
             iter = iter.parent;
@@ -243,105 +249,88 @@ public class GameTree {
      * @param parentNode Nodo radice
      * @param depth Profondità di generazione
      * @param board Mantiene memorizzata la situazione attuale della griglia
-     * @implNote Costo:
+     * @implNote Costo: O( depth*h(MK + NK + log(h)) + MNK ) = O( depth*h(MK + NK + log(h)) )  h = altezza albero
      * */
     private Node createTree(Node parentNode, boolean mePlaying, int depth, BoardStatus board) {
-        board.generateMovesToWinAt(parentNode.action.j, parentNode.action.i);                               // O(max{M, N}*K)
+        board.generateMovesToWinAt(parentNode.action.j, parentNode.action.i);                                                   // O(max{M, N}*K)
         MNKGameState gameState = board.statusAt(parentNode.action.j, parentNode.action.i);
+        MNKCellState curr_state = mePlaying ? MY_STATE : OPPONENT_STATE;
 
         if (gameState != MNKGameState.OPEN) {
             setScoreOf(parentNode, gameState);
-            parentNode.endState = true;
         }
         else if (depth <= 0) {
-            setHeuristicScoreOf(parentNode, board, mePlaying ? MY_STATE : OPPONENT_STATE);              // O(M*N*K)
+            setHeuristicScoreOf(parentNode, board, curr_state);                                                                 // O(M*N*K)
         }
         else {
-            LinkedList<EstimatedPosition> list = new LinkedList<>();
-            PriorityQueue<EstimatedPosition> moves = getAdjacency(parentNode, board, mePlaying ? MY_STATE : OPPONENT_STATE);
+            PriorityQueue<EstimatedPosition> moves = getAdjacency(parentNode, board, mePlaying ? MY_STATE : OPPONENT_STATE);    // O( h(MK + NK + log(h)) )
 
             int i=0;
             int score = moves.peek().score;
-            while (moves.size() > 0) {
-                /**
-                 * - Per le mosse critiche, valuto tutte quelle che hanno lo stesso score e termino quando ne trovo una diversa
-                 *   (idea: se devo bloccare/vincere non dovrò preoccuparmi di fare altro)
-                 * - Per le mosse di altro tipo ne estraggo un paio e le valuto
-                 * */
+            while (moves.size() > 0) {                                                                                          // O(p) p = Numero di iterazioni
+                // - Per le mosse critiche valuto tutte quelle che hanno lo stesso score e termino quando ne trovo una diversa
+                //   (idea di base: se devo bloccare/vincere non dovrò preoccuparmi di fare altro)
                 if (moves.peek().score >= PRIORITY_4 && moves.peek().score != score) { break; }
+                // - Per le mosse di altro tipo ne estraggo un paio (tra le più promettenti) e le valuto
                 if (moves.peek().score < PRIORITY_4 && i >= 3) { break; }
-                //if (moves.peek().score < BLOCK_MOVE2_DANGEROUS && i >= 5) { break; }
-                //if (moves.peek().score != score || (moves.peek().score < target * 20 && i>=3)) { break; }
-                //if (moves.peek().score != score) { break; }
 
-                list.add(moves.poll());
-                i++;
-            }
+                EstimatedPosition toVisit = moves.poll();                                                                       // O(log(q)) q = dimensione coda
 
-            /*System.out.println(board);
-            System.out.println(mePlaying ? "ME" : "OPP");
-            for (EstimatedPosition pe : list) {
-                System.out.print(pe + " ");
-            }
-            System.out.println();
-            System.out.println();*/
-
-            for (EstimatedPosition toVisit : list) {
                 int toVisit_x = toVisit.x;
                 int toVisit_y = toVisit.y;
 
-                MNKCellState state = mePlaying ? MY_STATE : OPPONENT_STATE;
-
-                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, state);
+                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, curr_state);
                 Node child = new Node(parentNode, toEvalCell);
 
-                board.setAt(toVisit_x, toVisit_y, state);
+                board.setAt(toVisit_x, toVisit_y, curr_state);                                                                  // O(max{M, N})
                 parentNode.children.add( createTree(child, !mePlaying, depth-1, board) );
-                board.removeAt(toVisit_x, toVisit_y);
+                board.removeAt(toVisit_x, toVisit_y);                                                                           // O(max{M, N})
+
+                i++;
             }
         }
-
 
         return parentNode;
     }
 
     /**
      * Genera l'albero di gioco iniziale
-     * @implNote Costo:
+     * @implNote Costo: O( depth*h(MK + NK + log(h)) )
      * */
     public void generate(MNKCell firstMove) {
         root = new Node(null, firstMove);
 
-        BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);
-        board.setAt(firstMove.j, firstMove.i, firstMove.state);
+        BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);       // Θ(M*N)
+        board.setAt(firstMove.j, firstMove.i, firstMove.state);                     // Θ(1) [Dato che board è appena stato istanziato]
 
-        createTree(root, !first, MAX_DEPTH, board);
-        alphabeta(root, first, LOSS_SCORE, WIN_SCORE);
+        createTree(root, !first, MAX_HEIGHT, board);                                // O( depth*h(MK + NK + log(h)) )
+        alphabeta(root, first, LOSS_SCORE, WIN_SCORE);                              // O(p^h)
     }
 
     /**
      * Estende di una determinata profodità l'albero radicato nel nodo indicato
      * @param node Nodo da estendere
-     * @implNote Costo:
+     * @implNote Costo: O( depth*h(MK + NK + log(h)) )
      * */
     public void extendNode(Node node, int depth) {
         BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);
-        for (MNKCell cell : node.getMarkedCells()) {
+        /** TODO Modificare e mettere un iteratore a Node */
+        for (MNKCell cell : node.getMarkedCells()) {                                // O(h)
             board.setAt(cell.j, cell.i, cell.state);
         }
 
         boolean mePlaying = node.action.state == MY_STATE;
-        createTree(node, !mePlaying, depth, board);
+        createTree(node, !mePlaying, depth, board);                                 // O( depth*h(MK + NK + log(h)) )
     }
 
     /**
      * Estende di un livello di profondità tutte le foglie dell'albero radicato nel nodo indicato
      * @param node Nodo di partenza
-     * @implNote Costo:
+     * @implNote Costo (pessimo): O( p^h * depth*h(MK + NK + log(h)) )     p^h = numero foglie ipotizzando un albero con p figli per ciascun nodo
      * */
     private void extendLeaves(Node node) {
         if (node.isLeaf() && !node.endState) {
-            extendNode(node, 2);
+            extendNode(node, 2);                                              // O( depth*h(MK + NK + log(h)) )
         }
         else {
             for (Node child : node.children) {
@@ -353,25 +342,25 @@ public class GameTree {
     /**
      * Sposta la radice dell'albero al nodo contenente la mossa corrispondente
      * @param move Mossa dell'avversario
-     * @implNote Costo:
+     * @implNote Costo (pessimo): O( p^h * depth*h(MK + NK + log(h)) )
      * */
     public void setOpponentMove(MNKCell move) {
         Node bestChild = null;
 
-        for (Node child : root.children) {
+        for (Node child : root.children) {                                                              // O(p)
             if (child.action.equals(move)) {
                 bestChild = child;
                 break;
             }
         }
 
+        // La mossa dell'avversario non era tra le mie previste
         if (bestChild == null) {
             Node new_root = new Node(root, move);
             root.setSelectedChild(new_root);
             root = new_root;
-
-            extendNode(this.root, MAX_DEPTH-1);
-            alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+            extendNode(this.root, first ? MAX_HEIGHT+1 : MAX_HEIGHT);                                   // O( depth*h(MK + NK + log(h)) )
+            alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);      // O(p^h)
 
             canExtend = false;
         }
@@ -379,8 +368,8 @@ public class GameTree {
             root.setSelectedChild(bestChild);
             root = bestChild;
             if (canExtend) {
-                extendLeaves(root);
-                alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+                extendLeaves(root);                                                                     // O( p^h * depth*h(MK + NK + log(h)) )
+                alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);            // O(p^h)
             }
             canExtend = !canExtend;
         }
@@ -390,12 +379,12 @@ public class GameTree {
     /**
      * Sposta la radice dell'albero al nodo contenente la mossa migliore
      * @return Mossa da eseguire
-     * @implNote Costo:
+     * @implNote Costo (pessimo): O( p^h * depth*h(MK + NK + log(h)) )
      * */
     public MNKCell nextMove() {
         Node nextChild = root.children.peek(); /*** TODO RIMETTERE POLL */
 
-        for (Node child : root.children) {
+        for (Node child : root.children) {                                                          // O(p)
             //System.out.println(child.action + " " + child.score + " " + child.alphabeta);
             if (child.score > nextChild.score && child.alphabeta) {
                 nextChild = child;
@@ -407,8 +396,8 @@ public class GameTree {
         root = nextChild;
 
         if (canExtend) {
-            extendLeaves(root);
-            alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);
+            extendLeaves(root);                                                                     // O( p^h * depth*h(MK + NK + log(h)) )
+            alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);            // O(p^h)
         }
         canExtend = !canExtend;
 
@@ -425,6 +414,10 @@ public class GameTree {
     }
 
     public int size() {
-        return size_r(root);
+        Node iter = root;
+        while (iter.parent != null) {
+            iter = iter.parent;
+        }
+        return size_r(iter);
     }
 }

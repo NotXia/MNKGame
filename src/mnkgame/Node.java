@@ -9,6 +9,9 @@ public class Node {
     public int score;
     public boolean alphabeta, endState;
 
+    /**
+     * @implNote Costo: O(1)
+     * */
     public Node(Node parent, MNKCell action) {
         this.parent = parent;
         this.children = new LinkedList<>();

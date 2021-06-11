@@ -11,15 +11,13 @@ public class EstimatedPosition implements Comparable<EstimatedPosition> {
         this.y = y;
         this.score = score;
         this.blocked = 0;
-        this.openDirections = 0;
     }
 
-    public EstimatedPosition(int x, int y, int score, int blocked, int openDirections) {
+    public EstimatedPosition(int x, int y, int score, int blocked) {
         this.x = x;
         this.y = y;
         this.score = score;
         this.blocked = blocked;
-        this.openDirections = openDirections;
     }
 
     public int compareTo(EstimatedPosition ep) {
@@ -28,10 +26,6 @@ public class EstimatedPosition implements Comparable<EstimatedPosition> {
         if (diff == 0) {
             diff = ep.blocked - this.blocked;
         }
-
-        /*if (diff == 0) {
-            diff = ep.openDirections - this.openDirections;
-        }*/
 
         return diff;
     }

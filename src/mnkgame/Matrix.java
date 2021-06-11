@@ -8,7 +8,7 @@ public class Matrix {
     private int columns, rows, target;
 
     /**
-     * @implNote Costo: O(M*N)
+     * @implNote Costo: θ(M*N)
      * */
     public Matrix(int columns, int rows, int target) {
         this.matrix = new MNKCellState[columns][rows];
@@ -25,7 +25,7 @@ public class Matrix {
     }
 
     /**
-     * @implNote Costo: O(1)
+     * @implNote Costo: Θ(1)
      * */
     public void setAt(int x, int y, MNKCellState state) {
         if (state != null && state != MNKCellState.FREE) {
@@ -56,7 +56,7 @@ public class Matrix {
 
     /**
      * Restituisce un vettore contenente la configurazione dell'intera riga a cui appartiene la posizione in input
-     * @implNote Costo: O(N)
+     * @implNote Costo: Θ(N)
      * */
     public MNKCellState[] getRowAt(int start_x, int start_y) {
         MNKCellState[] row = new MNKCellState[columns];
@@ -68,7 +68,7 @@ public class Matrix {
 
     /**
      * Restituisce un vettore contenente la configurazione dell'intera colonna a cui appartiene la posizione in input
-     * @implNote Costo: O(M)
+     * @implNote Costo: Θ(M)
      * */
     public MNKCellState[] getColumnAt(int start_x, int start_y) {
         MNKCellState[] column = new MNKCellState[rows];
@@ -123,6 +123,9 @@ public class Matrix {
 
         return buffer.toArray(new MNKCellState[buffer.size()]);
     }
+
+
+
 
     public String toString(MNKCellState playerState) {
         String out = "";
