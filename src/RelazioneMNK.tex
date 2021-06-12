@@ -6,7 +6,7 @@
 \usepackage{cancel}
 \usepackage{float}
 \usepackage{mathtools}
-\usepackage[margin=3.5cm]{geometry}
+\usepackage[margin=3cm]{geometry}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -201,6 +201,8 @@ Priorità 4 & Blocca la creazione di un vicolo cieco da parte dell'avversario \\
 Altrimenti & Piazza una mossa che aumenta un allineamento del giocatore dando priorità ad allineamenti più lunghi e in grado di bloccare la sequenza maggiore dell'avversario \\ \hline
 \end{tabular}
 \end{table}
+$ $\\
+Le mosse con priorità $\leq 4$ sono considerate critiche in quanto permettono di aprire scenari a vittoria o sconfitta certa.
 \subsubsection*{Costo computazionale}
 Il costo computazionale è O$(h(MK+NK+\log h))$, dove $h$ è l'altezza dell'albero di gioco.\\
 Il costo è dato dal ciclo di costo $\Theta(h)$ che scorre per intero l'albero e per ciascuna iterazione analizza al più un numero costante di 8 celle (tutte le possibili direzioni). Il costo maggiore all'interno del ciclo è dato dalla chiamata alla funzione \texttt{generateMovesToWinAt} di costo O$(MK+NK)$.\\
@@ -209,6 +211,81 @@ Inoltre ogni mossa elaborata viene inserita in una coda con priorità che ha un 
 \sum_{i=1}^{h} \log i = \log h! = \log \sqrt{2\pi h} \left(\dfrac{h}{e}\right)^h = \cancel{\log \sqrt{2 \pi}} + \cancel{\log \sqrt{h}} + h \log \dfrac{h}{\cancel{e}} = \text{O}(h \log h)
 \end{align*}
 
+\subsection*{Generazione albero di gioco}
+\subsubsection*{Descrizione}
+Il metodo \texttt{createTree} nella classe \texttt{GameTree} prende in input un nodo dell'albero e un intero rappresentante il numero di livelli da generare e genera l'albero di gioco radicato in quel nodo.\\
+Il funzionamento si basa sul seguente pseudocodice:
+\begin{algorithm*}
+\SetAlgoLined
+\SetKwProg{Fn}{Function}{}{end}
+\Fn{\normalfont \texttt{createTree}(nodo, depth)}{
+	\texttt{generateMovesToWinAt(}coordinate della mossa nel nodo\texttt{)} \\
+	\vspace{0.2cm}
+	\uIf{partita terminata}{
+		imposta punteggio reale
+	}
+	\uElseIf{depth $\leq 0$}{
+		imposta punteggio euristico
+	}
+	\Else{
+		\texttt{PriorityQueue} mosse $\gets$ \texttt{getAdjacency(}a partire dal nodo\texttt{)} \\
+		\While{ci sono mosse promettenti}{
+			\texttt{createTree(}nodo da visitare, depth$-1$\texttt{)}
+		}
+	}
+}
+\end{algorithm*}\\
+La selezione delle mosse promettenti è basato sul seguente criterio:
+\begin{itemize}
+\setlength\itemsep{0.05cm}
+	\item Se la mossa è critica, valuto tutte quelle equivalenti (ad esempio se c'è la possibilità di vincere immediatamente, non è necessario valutare mosse di tipologia diversa)
+	\item Se la mossa non è critica, valuto al più un numero fissato.
+\end{itemize}
+\subsubsection*{Costo computazionale}
+La funzione è si basa sulla seguente funzione di ricorrenza:
+\begin{equation*}
+\mathclap {
+	T(\text{depth}) =
+	\begin{cases}
+	MK+NK & \mbox{se partita terminata}\\ 
+	\cancel{(MK+NK)}+MNK & \mbox{se depth $\leq$ 0}\\
+	\cancel{(MK+NK)}+h(MK+NK+\log h)+p(M+N)+p\log h+pT(depth-1) & \mbox{altrimenti}\\
+	\end{cases}
+}
+\end{equation*}
+Dove $h$ è l'altezza dell'albero, $p$ è il numero di iterazioni del ciclo \texttt{while} (nodi promettenti) e $q$ è il numero di possibili mosse (dimensione della coda con priorità).\\
+Assumendo che il numero di iterazioni $p$ sia in media coerente con il valore soglia stabilito, possiamo trattarlo come una costante, quindi la complessità computazionale della terza equazione è:
+\begin{equation*}
+h(MK+NK+\log h)+\cancel{p(M+N)}+\cancel{p}\log q+\cancel{p}T(depth-1)=\\
+\end{equation*}
+\begin{equation*}
+=h(MK+NK+\log h)+\log q+T(depth-1)=\\
+\end{equation*}
+\begin{equation*}
+=h(MK+NK)+h\log h + \log q+T(depth-1)=\\
+\end{equation*}
+Risolvendo per iterazione, otteniamo che il costo è:
+\begin{equation*}
+=(h(MK+NK)+h\log h + \log q)\cdot (depth\cancel{-1}) + \cancel{MNK}=\\
+\end{equation*}
+\begin{equation*}
+=depth \cdot h(MK+NK)+depth(h\log h + \log q)\\
+\end{equation*}
+\textbf{FIXAREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE $\downarrow$}\\
+Dimostriamo, applicando la definizione in modo diretto, che $\log q =$ O$(h\log h)$, ovvero, vogliamo provare che $\exists c > 0, n_0 \geq 0 \text{ t.c. } \forall n \geq n_0 : \log q \leq c \cdot (h \log h)$.\\
+Possiamo porre $c = 1$ e mostrare che per un $n_0 \geq 0 $ si ha che $\log q \leq h \log h$.\\
+Ricordando che $h$ è l'altezza dell'albero di gioco e $q$ è il numero di possibili mosse, è facile convincersi che il numero di mosse aumenta con l'aumentare dell'albero e inizia a diminuire una volta raggiunto un punto di "saturazione", quindi, si è provato che $\log q =$ O$(h\log h)$.\\
+La complessità ottenuta è quindi:
+\begin{equation*}
+depth \cdot h(MK+NK)+depth(h\log h)=\\
+\end{equation*}
+\begin{equation*}
+=depth \cdot h(MK+NK+\log h).\\
+\end{equation*}
+Il costo computazionale della funzione \texttt{createTree} è O$(depth \cdot h(MK+NK+\log h))$, dove $h$ è l'altezza dell'albero e \textit{depth} è il livello di profondità fino al quale generare.
+
+\newpage
+Di seguito, le robe brutte:
 \newpage
 
 \subsection*{Valutazione mosse "interessanti"}
