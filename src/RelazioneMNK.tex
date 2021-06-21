@@ -7,6 +7,7 @@
 \usepackage{float}
 \usepackage{mathtools}
 \usepackage[margin=3cm]{geometry}
+\usepackage[dvipsnames]{xcolor}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -94,8 +95,8 @@ Inoltre, bisogna limitare la generazione in altezza dell'albero per mantenere ac
 \subsection*{Quantificazione degli allineamenti}
 \subsubsection*{Descrizione}
 Per quantificare i possibili allineamenti del giocatore e dell'avversario, viene utilizzato il metodo \texttt{getScoresArray} della classe \texttt{BoardStatus} che implementa un algoritmo basato sulla programmazione dinamica che prende in input il vettore $I[0 .. n-1]$ contenente la configurazione di gioco di ciascuna cella rispetto ad una direzione rappresentata da \texttt{PLAYER}, \texttt{OPPONENT}, \texttt{FREE} e restituisce il vettore $S[0 .. n-1]$, ove $S[i]$ contiene la tupla di interi:\\
-\centerline{(\texttt{celle allineabili}, \texttt{mosse necessarie alla vittoria}, \texttt{punto inizio allineamento})}\\
-che rappresentano le informazioni sulla possibile mossa all'$i$-esima cella. Le seguenti equazioni di ricorrenza descrivono le varie casistiche previste dall'algoritmo:\\
+\centerline{(\texttt{celle allineabili}, \texttt{mosse necessarie \textcolor{red}{alla vittoria}}, \texttt{punto inizio allineamento})}\\
+che rappresentano le informazioni sulla possibile mossa all'$i$-esima cella. \\Le seguenti equazioni di ricorrenza descrivono le varie casistiche previste dall'algoritmo:\\
 \begin{equation*}
 	S[0] \leftarrow
 	\begin{cases}
@@ -148,26 +149,27 @@ Per trovare il numero di mosse ottimali per ciascuna cella, alla posizione $i$-e
   \If{$S[j].\text{aligned} = K \texttt{ AND } S[j].\text{moves} < S[i].\text{moves}$}{
    	\texttt{break}
    }
+   \textit{// Propagazione\\}
    $S[i-j] = S[i]$
  }
 \end{algorithm*}\\
 Per calcolare i valori in relazione all'avversario è sufficiente invertire \texttt{PLAYER} e \texttt{OPPONENT}.
 \subsubsection*{Costo computazionale}
 L'algoritmo deve necessariamente iterare per intero il vettore $I$ con un costo di $\Theta(I.\text{length})$, in aggiunta, per ciascun ciclo c'è la possibilità di dover propagare la tupla calcolata alle celle antecedenti.\\
-Nel caso pessimo, quindi, si ha un costo computazionale di O$(I.\texttt{length} \cdot K)$, ovvero la propagazione avviene per ogni posizione.
-\subsection*{Generazione punteggi}
+Nel caso pessimo, quindi, si ha un costo computazionale di O$(I.\texttt{length} \cdot K)$, ovvero \textcolor{ForestGreen}{quando} la propagazione avviene per ogni posizione.
+\subsection*{Generazione \textcolor{red}{punteggi} \textcolor{ForestGreen}{tuple}}
 \subsubsection*{Descrizione}
 La classe \texttt{BoardStatus} implementa le funzioni \texttt{generateMovesToWinAt} e \texttt{generateGlobalMovesToWin} che utilizzano il metodo \texttt{getScoresArray} per generare le tuple rispetto ad una riga, colonna o diagonale.\\
 In particolare: 
 \begin{itemize}
 \setlength\itemsep{0.05cm}
-	\item \texttt{generateMovesToWinAt} prende in input una coordinata e genera i punteggi della riga, colonna e diagonali che passano per quel punto
-	\item \texttt{generateGlobalMovesToWin} genera il punteggio per tutte le posizioni rispetto a tutte le direzioni
+	\item \texttt{generateMovesToWinAt} prende in input una coordinata e genera \textcolor{red}{i punteggi} \textcolor{ForestGreen}{le tuple} della riga, colonna e diagonali che passano per quel punto
+	\item \texttt{generateGlobalMovesToWin} genera \textcolor{red}{il punteggio} \textcolor{ForestGreen}{le tuple} per tutte le posizioni rispetto a tutte le direzioni
 \end{itemize}
 L'output viene memorizzato in delle matrici interne alla classe per evitare di dover rigenerare le tuple nel caso si dovesse accedere a celle adiacenti.
 \subsubsection*{Costo computazionale}
 La funzione \texttt{generateMovesToWinAt}, nel caso pessimo, ha costo O$(\texttt{max}\{M, N\} \cdot K) = \text{O}(MK+NK)$ dato dalla necessità di iterare tutte le direzioni rispetto ad una coordinata (quindi ha maggior peso la riga/colonna con più celle).\\
-Nel caso ottimo, invece, ha costo $\Theta(1)$, ovvero quando gli score sono già stati generati e memorizzati nelle matrici.\\
+Nel caso ottimo, invece, ha costo $\Theta(1)$, ovvero quando \textcolor{red}{gli score sono già stati generati e memorizzati} \textcolor{ForestGreen}{le tuple già stati state generate e memorizzate} nelle matrici.\\
 La funzione \texttt{generateGlobalMovesToWin}, nel caso pessimo, ha costo O$(MNK)$ perché bisogna iterare l'intera griglia di gioco.
 
 \subsection*{Euristica su configurazioni intermedie}
@@ -182,13 +184,14 @@ Vengono quindi gestite tre casistiche:
 	\item Altrimenti viene assegnata la differenza tra il punteggio del giocatore e quello dell'avversario.
 \end{enumerate}
 \subsubsection*{Costo computazionale}
-La funzione \texttt{setHeuristicScoreOf} ha costo O$(MNK)$ dato dalla chiamata al metodo \texttt{generateGlobalMovesToWin}.
+La funzione \texttt{setHeuristicScoreOf} ha costo\textcolor{ForestGreen}{, nel caso pessimo, di} O$(MNK)$ dato dalla chiamata al metodo \texttt{generateGlobalMovesToWin}.
 
 \subsection*{Ricerca della mossa successiva}
 \subsubsection*{Descrizione}
 Nella classe \texttt{BoardStatus} viene implementato il metodo \texttt{getAdjacency} che, a partire da un nodo dell'albero, scansiona le celle vuote adiacenti a tutte le mosse effettuate e restituisce una coda con priorità contenente tutte le mosse analizzate ordinate in base all'importanza.\\
 Per marcare le celle visitate si utilizza una hash table che associa ad una coordinata un booleano, per evitare di dover allocare un'intera matrice di dimensione $\Theta(MN)$, avendo comunque un tempo di accesso medio di O$(1)$.\\
-Le mosse valutate si basano sul seguente ordine di priorità:
+\textcolor{red}{ Le mosse valutate }
+\textcolor{ForestGreen}{ Le mosse vengono valutate utilizzando il numero di mosse mancanti alla vittoria e } si basano sul seguente ordine di priorità:
 \begin{table}[H]	% [H] per non stampare la tabella a inizio file. Richiede package float
 \centering			% centra la tabella
 \def\arraystretch{1.5}
@@ -205,7 +208,7 @@ $ $\\
 Le mosse con priorità $\leq 4$ sono considerate critiche in quanto permettono di aprire scenari a vittoria o sconfitta certa.
 \subsubsection*{Costo computazionale}
 Il costo computazionale è O$(h(MK+NK+\log h))$, dove $h$ è l'altezza dell'albero di gioco.\\
-Il costo è dato dal ciclo di costo $\Theta(h)$ che scorre per intero l'albero e per ciascuna iterazione analizza al più un numero costante di 8 celle (tutte le possibili direzioni). Il costo maggiore all'interno del ciclo è dato dalla chiamata alla funzione \texttt{generateMovesToWinAt} di costo O$(MK+NK)$.\\
+Il costo è dato dal ciclo di costo $\Theta(h)$ che \textcolor{red}{scorre per intero l'albero} \textcolor{ForestGreen}{ripercorre l'albero fino alla radice} e per ciascuna iterazione analizza al più un numero costante di 8 celle (tutte le possibili direzioni). Il costo maggiore all'interno del ciclo è dato dalla chiamata alla funzione \texttt{generateMovesToWinAt} di costo O$(MK+NK)$.\\
 Inoltre ogni mossa elaborata viene inserita in una coda con priorità che ha un costo computazionale logaritmico rispetto alla dimensione della coda. Ipotizzando che ad ogni iterazione si inserisca sempre nella coda, il costo è il seguente (utilizzando l'approssimazione di Stirling del fattoriale):
 \begin{align*}
 \sum_{i=1}^{h} \log i = \log h! = \log \sqrt{2\pi h} \left(\dfrac{h}{e}\right)^h = \cancel{\log \sqrt{2 \pi}} + \cancel{\log \sqrt{h}} + h \log \dfrac{h}{\cancel{e}} = \text{O}(h \log h)
@@ -242,7 +245,7 @@ La selezione delle mosse promettenti è basato sul seguente criterio:
 	\item Se la mossa non è critica, valuto al più un numero fissato.
 \end{itemize}
 \subsubsection*{Costo computazionale}
-La funzione è si basa sulla seguente funzione di ricorrenza:
+La funzione è si basa sulla seguente equazione di ricorrenza:
 \begin{equation*}
 \mathclap {
 	T(\text{depth}) =
@@ -254,7 +257,7 @@ La funzione è si basa sulla seguente funzione di ricorrenza:
 }
 \end{equation*}
 Dove $h$ è l'altezza dell'albero, $p$ è il numero di iterazioni del ciclo \texttt{while} (nodi promettenti) e $q$ è il numero di possibili mosse (dimensione della coda con priorità).\\
-Assumendo che il numero di iterazioni $p$ sia in media coerente con il valore soglia stabilito, possiamo trattarlo come una costante, quindi la complessità computazionale della terza equazione è:
+Assumendo che il numero di iterazioni $p$ sia in media coerente con il valore soglia stabilito, possiamo trattarlo come una costante, quindi la complessità computazionale \textcolor{red}{della terza equazione} \textcolor{ForestGreen}{del caso ricorsivo} è:
 \begin{equation*}
 h(MK+NK+\log h)+\cancel{p(M+N)}+\cancel{p}\log q+\cancel{p}T(depth-1)=\\
 \end{equation*}
@@ -271,10 +274,19 @@ Risolvendo per iterazione, otteniamo che il costo è:
 \begin{equation*}
 =depth \cdot h(MK+NK)+depth(h\log h + \log q)\\
 \end{equation*}
+\textcolor{red}{
 \textbf{FIXAREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE $\downarrow$}\\
 Dimostriamo, applicando la definizione in modo diretto, che $\log q =$ O$(h\log h)$, ovvero, vogliamo provare che $\exists c > 0, n_0 \geq 0 \text{ t.c. } \forall n \geq n_0 : \log q \leq c \cdot (h \log h)$.\\
 Possiamo porre $c = 1$ e mostrare che per un $n_0 \geq 0 $ si ha che $\log q \leq h \log h$.\\
-Ricordando che $h$ è l'altezza dell'albero di gioco e $q$ è il numero di possibili mosse, è facile convincersi che il numero di mosse aumenta con l'aumentare dell'albero e inizia a diminuire una volta raggiunto un punto di "saturazione", quindi, si è provato che $\log q =$ O$(h\log h)$.\\
+Ricordando che $h$ è l'altezza dell'albero di gioco e $q$ è il numero di possibili mosse, è facile convincersi che il numero di mosse aumenta con l'aumentare dell'albero e inizia a diminuire una volta raggiunto un punto di "saturazione", quindi, si è provato che $\log q =$ O$(h\log h)$.
+}
+\textcolor{ForestGreen}{
+Dimostriamo, applicando la definizione, che $q =$ O$(h)$. 
+Fissiamo due successioni $q_n$ e $h_n$, rappresentanti rispettivamente il numero di possibili mosse e l'altezza dell'albero nel progredire della partita, e proviamo che che $\exists c > 0, n_0 \geq 0 \text{ t.c. } \forall n \geq n_0 : q_n \leq c \cdot h_n$.\\
+Intuitivamente l'altezza dell'albero di gioco cresce in maniera lineare nel corso della partita, mentre il numero di possibili mosse cresce per poi diminuire una volta raggiunto un punto di "saturazione".\\
+Quindi ponendo $c=1$, esiste un $n_0$ tale che $\forall n \geq n_0:$ $q_n \leq h_n$, provando che $q =$ O$(h)$.
+}
+\\
 La complessità ottenuta è quindi:
 \begin{equation*}
 depth \cdot h(MK+NK)+depth(h\log h)=\\
@@ -282,7 +294,9 @@ depth \cdot h(MK+NK)+depth(h\log h)=\\
 \begin{equation*}
 =depth \cdot h(MK+NK+\log h).\\
 \end{equation*}
-Il costo computazionale della funzione \texttt{createTree} è O$(depth \cdot h(MK+NK+\log h))$, dove $h$ è l'altezza dell'albero e \textit{depth} è il livello di profondità fino al quale generare.
+Il costo computazionale della funzione \texttt{createTree} è O$(depth \cdot h(MK+NK+\log h))$, dove $h$ è l'altezza dell'albero e \textit{depth} è \textcolor{red}{il livello di profondità fino al quale generare} \textcolor{ForestGreen}{il numero di livelli da generare}.
+
+
 
 \newpage
 Di seguito, le robe brutte:
