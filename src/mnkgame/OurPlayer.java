@@ -36,13 +36,13 @@ public class OurPlayer implements MNKPlayer {
                 this.gameTree.generate(outCell);                                        // O( h(MK + NK + log(h)) )
             }
             else {
-                this.gameTree.generate(MC[MC.length-1]);                                // O( depth*h(MK + NK + log(h)) )
-                outCell = this.gameTree.nextMove();                                     // O( h(MK + NK + log(h)) )
+                this.gameTree.generate(MC[MC.length-1]);                                // O( h(MK + NK + log(h)) )
+                outCell = this.gameTree.nextMove();                                     // O( p^h * h(MK + NK + log(h)) )
             }
         }
         else {
             this.gameTree.setOpponentMove(MC[MC.length-1]);                             // O( p^h * h(MK + NK + log(h)) )
-            outCell = this.gameTree.nextMove();                                         // O( h(MK + NK + log(h)) )
+            outCell = this.gameTree.nextMove();                                         // O( p^h * h(MK + NK + log(h)) )
         }
 
         /*end_t = System.currentTimeMillis();
