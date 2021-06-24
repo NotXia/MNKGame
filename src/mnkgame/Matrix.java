@@ -131,6 +131,29 @@ public class Matrix {
         return buffer.toArray(new MNKCellState[buffer.size()]);
     }
 
+    /**
+     * Dati (x, y), restituisce un oggetto Coord contenente le coordinate di inizio della diagonale principale che comprende (x, y)
+     * @implNote Costo: Θ(1)
+     * */
+    public Coord getMainDiagonalStart(int x, int y) {
+        int min = Math.min(x, y);
+        return new Coord(x-min, y-min);
+    }
+
+    /**
+     * Dati (x, y), restituisce un oggetto Coord contenente le coordinate di inizio della diagonale secondaria che comprende (x, y)
+     * @implNote Costo: Θ(1)
+     * */
+    public Coord getSecondaryDiagonalStart(int x, int y) {
+        int a = x + y;
+        if (a <= columns-1) {
+            return new Coord(a, 0);
+        }
+        else {
+            return new Coord(columns-1, a - (columns-1));
+        }
+    }
+
 
     public String toString(MNKCellState playerState) {
         String out = "";

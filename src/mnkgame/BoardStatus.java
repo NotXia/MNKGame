@@ -142,27 +142,6 @@ public class BoardStatus {
     }
 
     /**
-     * Dati (x, y), restituisce un oggetto Coord contenente le coordinate di inizio della diagonale principale che comprende (x, y)
-     * @implNote Costo: Θ(1)
-     * */
-    private Coord getMainDiagonalStart(int x, int y) {
-        int min = Math.min(x, y);
-        return new Coord(x-min, y-min);
-    }
-
-    /**
-     * TODO Dati (x, y), restituisce un oggetto Coord contenente le coordinate di inizio della diagonale secondaria che comprende (x, y)
-     * @implNote Costo: O(min{M, N})
-     * */
-    private Coord getSecondaryDiagonalStart(int x, int y) {
-        int i=x, j=y;
-        while (isValidCell(i, j)) {
-            i++; j--;
-        }
-        return new Coord(i-1, j+1);
-    }
-
-    /**
      * Restituisce un vettore di Score tale che la posizione i-esima indichi il numero di mosse mancanti per vincere se si selezionasse la mossa in quella posizione
      * @param board Vettore contenente la configurazione di gioco rispetto ad una riga/colonna/diagonale
      * @param toCheckState Lo stato da controllare (giocatore o avversario)
@@ -295,7 +274,7 @@ public class BoardStatus {
         Score[] moves;
         final MNKCellState[] diagonal = matrix.getMainDiagonalAt(x, y);             // O(min{M, N})
 
-        Coord diagonalStart = getMainDiagonalStart(x, y);
+        Coord diagonalStart = matrix.getMainDiagonalStart(x, y);
         int diagonalStartX = diagonalStart.x, diagonalStartY = diagonalStart.y;
 
         // Giocatore
@@ -326,7 +305,7 @@ public class BoardStatus {
         Score[] moves;
         final MNKCellState[] diagonal = matrix.getSecondaryDiagonalAt(x, y);            // O(min{M, N})
 
-        Coord diagonalStart = getSecondaryDiagonalStart(x, y);
+        Coord diagonalStart = matrix.getSecondaryDiagonalStart(x, y);
         int diagonalStartX = diagonalStart.x, diagonalStartY = diagonalStart.y;
 
         // Giocatore
@@ -543,7 +522,7 @@ public class BoardStatus {
             }
         }
 
-        Coord diagonalStart = getMainDiagonalStart(toCheckX, toCheckY);
+        Coord diagonalStart = matrix.getMainDiagonalStart(toCheckX, toCheckY);
         int i=diagonalStart.x, j=diagonalStart.y;
         prevStart = -1;
         while (isValidCell(i, j)) {                                                         // O(min{M, N})
@@ -554,7 +533,7 @@ public class BoardStatus {
             i++; j++;
         }
 
-        diagonalStart = getSecondaryDiagonalStart(toCheckX, toCheckY);
+        diagonalStart = matrix.getSecondaryDiagonalStart(toCheckX, toCheckY);
         i=diagonalStart.x; j=diagonalStart.y;
         prevStart = -1;
         while (isValidCell(i, j)) {                                                         // O(min{M, N})
