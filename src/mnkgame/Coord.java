@@ -26,24 +26,4 @@ public class Coord {
     public int hashCode() {
         return Objects.hash(x, y);
     }
-
-    public boolean isOnTheSameRowOf(Coord c) {
-        return this.y == c.y;
-    }
-
-    public boolean isOnTheSameColumnOf(Coord c) {
-        return this.x == c.x;
-    }
-
-    public boolean isOnTheSameMainDiagonalOf(Coord c) {
-        return (this.x - c.x) == (this.y - c.y);
-    }
-
-    public boolean isOnTheSameSecondaryDiagonalOf(Coord c) {
-        return (this.x - c.x) == -(this.y - c.y);
-    }
-
-    public double distance(Coord c) {
-        return Math.sqrt(Math.pow(Math.abs(x-c.x), 2) + Math.pow(Math.abs(y-c.y), 2));
-    }
 }

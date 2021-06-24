@@ -33,16 +33,21 @@ public class Matrix {
             size++;
         }
         else {
-            matrix[x][y] = MNKCellState.FREE;
-            size--;
+            removeAt(x, y);
         }
     }
 
+    /**
+     * @implNote Costo: Θ(1)
+     * */
     public MNKCellState getAt(int x, int y) {
         if (x < 0 || x >= columns || y < 0 || y >= rows) { return null; }
         return matrix[x][y];
     }
 
+    /**
+     * @implNote Costo: Θ(1)
+     * */
     public void removeAt(int x, int y) {
         if (matrix[x][y] != MNKCellState.FREE) {
             matrix[x][y] = MNKCellState.FREE;
@@ -50,6 +55,10 @@ public class Matrix {
         }
     }
 
+    /**
+     * Restituisce il numero di celle riempite
+     * @implNote Costo: Θ(1)
+     * */
     public int size() {
         return size;
     }
@@ -91,8 +100,7 @@ public class Matrix {
             i++; j++;
         }
 
-        i = start_x-1;
-        j = start_y-1;
+        i = start_x-1; j = start_y-1;
         while (i >= 0 && j >= 0) {
             buffer.addFirst(matrix[i][j]);
             i--; j--;
@@ -114,8 +122,7 @@ public class Matrix {
             i++; j--;
         }
 
-        i = start_x-1;
-        j = start_y+1;
+        i = start_x-1; j = start_y+1;
         while (i >= 0 && j < rows) {
             buffer.addLast(matrix[i][j]);
             i--; j++;
@@ -125,32 +132,16 @@ public class Matrix {
     }
 
 
-
-
     public String toString(MNKCellState playerState) {
         String out = "";
         for (int y=0; y<rows-1; y++) {
             for (int x=0; x<columns; x++) {
-                out += (matrix[x][y] == MNKCellState.FREE ?
-                            "-"
-                        :
-                            matrix[x][y] == playerState ?
-                                "Me"
-                            :
-                                "Op")
-                        + "\t";
+                out += (matrix[x][y] == MNKCellState.FREE ? "-" : matrix[x][y] == playerState ? "Me" : "Op") + "\t";
             }
             out += "\n";
         }
         for (int x=0; x<columns; x++) {
-            out += (matrix[x][rows-1] == MNKCellState.FREE ?
-                        "-"
-                    :
-                        matrix[x][rows-1] == playerState ?
-                            "Me"
-                        :
-                            "Op")
-                    + "\t";
+            out += (matrix[x][rows-1] == MNKCellState.FREE ? "-" : matrix[x][rows-1] == playerState ? "Me" : "Op") + "\t";
         }
         return out;
     }

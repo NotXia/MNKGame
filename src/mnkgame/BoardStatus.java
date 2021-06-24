@@ -18,7 +18,7 @@ public class BoardStatus {
 
         @Override
         public String toString() {
-            return String.format("[( %d ~ %d ) %d %d]", start, aligned, moves);
+            return String.format("[( %d ) %d %d]", start, aligned, moves);
         }
     }
 
@@ -156,7 +156,7 @@ public class BoardStatus {
      * */
     private Coord getSecondaryDiagonalStart(int x, int y) {
         int i=x, j=y;
-        while(isValidCell(i, j)) {
+        while (isValidCell(i, j)) {
             i++; j--;
         }
         return new Coord(i-1, j+1);
@@ -187,9 +187,8 @@ public class BoardStatus {
                 else { // board[i] == FREE
                     s[i] = new Score(s[i-1].aligned + 1, s[i-1].moves + 1, -1);
                 }
-                if (s[i].aligned == target) {
-                    s[i].start = i-(target-1);
-                }
+
+                if (s[i].aligned == target) { s[i].start = i-(target-1); } // Se sono in grado di allinearne fino al target, imposto l'inizio dell'allineamento
             }
             else {
                 int toIgnoreMoveCost = 0;
@@ -206,10 +205,14 @@ public class BoardStatus {
             // Progapazione
             if (s[i].aligned == target) {
                 for (int k=1; k<=target-1 && i-k>=0; k++) {                                             // O(K)
+                    /*
+                    * Interrompo la propagazione della mossa i-esima se:
+                    * - Incontro una mossa dell'avversario
+                    * - Incontro una mossa migliore della i-esima (necessita di meno mosse per vincere)
+                    * - Ho propagato K-1 volte
+                    * */
                     if ( (s[i-k].aligned==0 && s[i-k].moves==0) || (s[i-k].aligned == target && s[i-k].moves <= s[i].moves) ) { break; }
-                    s[i-k].aligned = s[i].aligned;
-                    s[i-k].moves = s[i].moves;
-                    s[i-k].start = s[i].start;
+                    s[i-k] = new Score(s[i]);
                 }
             }
         }
@@ -394,7 +397,7 @@ public class BoardStatus {
     }
 
     /**
-     * Restituisce il numero minimo di mosse necessarie per vincere a partire da una determinata cella
+     * Restituisce il numero minimo di mosse necessarie per vincere ad una determinata cella
      * @param toCheckState Indica lo stato della cella che si vuole controllare (giocatore o avversario)
      * @implNote Costo: Θ(1) [GLI SCORE DEVONO ESSERE STATI GENERATI]
      * */
@@ -426,11 +429,11 @@ public class BoardStatus {
      * */
     public int[] getAllPossibleWinningScenariosCount(MNKCellState toCheckState) {
         int[] out = new int[target+1];
-        int prevStart;
         Score[][] rowScore = rowScoreFilter(toCheckState);
         Score[][] columnScore = columnScoreFilter(toCheckState);
         Score[][] mainDiagonalScore = mainDiagonalScoreFilter(toCheckState);
         Score[][] secondaryDiagonalScore = secondaryDiagonalScoreFilter(toCheckState);
+        int prevStart; // Memorizza l'inizio dell'allineamento precedentemente elaborato
 
         // Righe                                                             // Θ(M*N)
         for (int y=0; y<rows; y++) { // Θ(M)
@@ -520,7 +523,7 @@ public class BoardStatus {
         Score[][] columnScore = columnScoreFilter(toCheckState);
         Score[][] mainDiagonalScore = mainDiagonalScoreFilter(toCheckState);
         Score[][] secondaryDiagonalScore = secondaryDiagonalScoreFilter(toCheckState);
-        int prevStart;
+        int prevStart; // Memorizza l'inizio dell'allineamento precedentemente elaborato
 
         prevStart = -1;
         for (int x=0; x<columns; x++) {                                                     // Θ(N)
@@ -575,14 +578,14 @@ public class BoardStatus {
         final MNKGameState WIN_STATE = PLAYER_STATE == MNKCellState.P1 ? MNKGameState.WINP1 : MNKGameState.WINP2;
         final MNKGameState LOSS_STATE = PLAYER_STATE == MNKCellState.P1 ? MNKGameState.WINP2 : MNKGameState.WINP1;
 
-        if (matrix.size() == columns * rows) {
-            return MNKGameState.DRAW;
-        }
-        else if (getMovesToWinAt(x, y, PLAYER_STATE) == 0) {
+        if (getMovesToWinAt(x, y, PLAYER_STATE) == 0) {
             return WIN_STATE;
         }
         else if (getMovesToWinAt(x, y, OPPONENT_STATE) == 0) {
             return LOSS_STATE;
+        }
+        else if (matrix.size() == columns * rows) {
+            return MNKGameState.DRAW;
         }
         else {
             return MNKGameState.OPEN;
