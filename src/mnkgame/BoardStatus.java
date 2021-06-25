@@ -88,8 +88,6 @@ public class BoardStatus {
         }
     }
 
-    public MNKCellState getAt(int x, int y) { return matrix.getAt(x, y); }
-
     /**
      * Indica se una determinata cella è FREE
      * @implNote Costo: Θ(1)
@@ -99,7 +97,7 @@ public class BoardStatus {
     }
 
     /**
-     * Imposta a null le celle degli score influenzate dalla posizione x, y
+     * Imposta a null la riga, colonna e diagonali che passano per (x, y)
      * @implNote Costo (pessimo): O(max{M, N}) = O(M+N)<br/>
      *           Costo (ottimo): Θ(1)
      * */
@@ -355,7 +353,7 @@ public class BoardStatus {
     }
 
     /**
-     * Restituisce la matrice degli score richiesta
+     * Restituisce la matrice degli score della tipologia richiesta
      * @implNote Costo: Θ(1)
      * */
     private Score[][] rowScoreFilter(MNKCellState toCheckState) {
@@ -571,7 +569,7 @@ public class BoardStatus {
         }
     }
 
-
+    @Override
     public String toString() {
         return matrix.toString(PLAYER_STATE);
     }

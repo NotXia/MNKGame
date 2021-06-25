@@ -20,7 +20,7 @@ public class OurPlayer implements MNKPlayer {
     }
 
     /**
-     * @implNote Costo (pessimo): O( p^h * h(MK + NK + log(h)) )
+     * @implNote Costo (pessimo): O( h(MK + NK + log(h)) )
      * */
     public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
         /*long start_t, end_t, elapsed, min;
@@ -37,12 +37,12 @@ public class OurPlayer implements MNKPlayer {
             }
             else {
                 this.gameTree.generate(MC[MC.length-1]);                                // O( h(MK + NK + log(h)) )
-                outCell = this.gameTree.nextMove();                                     // O( p^h * h(MK + NK + log(h)) )
+                outCell = this.gameTree.nextMove();                                     // O( h(MK + NK + log(h)) )
             }
         }
         else {
-            this.gameTree.setOpponentMove(MC[MC.length-1]);                             // O( p^h * h(MK + NK + log(h)) )
-            outCell = this.gameTree.nextMove();                                         // O( p^h * h(MK + NK + log(h)) )
+            this.gameTree.setOpponentMove(MC[MC.length-1]);                             // O( h(MK + NK + log(h)) )
+            outCell = this.gameTree.nextMove();                                         // O( h(MK + NK + log(h)) )
         }
 
         /*end_t = System.currentTimeMillis();

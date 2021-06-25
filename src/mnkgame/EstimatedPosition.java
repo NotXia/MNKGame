@@ -18,6 +18,7 @@ public class EstimatedPosition implements Comparable<EstimatedPosition> {
         this.blocked = blocked;
     }
 
+    @Override
     public int compareTo(EstimatedPosition ep) {
         /*
         * Ordinamento per score e poi per blocked
@@ -29,6 +30,8 @@ public class EstimatedPosition implements Comparable<EstimatedPosition> {
         return diff;
     }
 
+
+    @Override
     public String toString() {
         return "{ (" + x + ", " + y + ") Score: " + score + " }";
     }

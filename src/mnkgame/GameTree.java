@@ -3,24 +3,21 @@ package mnkgame;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 
-/**
- *
- * java -cp ".." mnkgame.MNKGame 4 4 4 mnkgame.OurPlayer
- *
- * **/
-
 public class GameTree {
     private Node root;
     private int rows, columns, target;
-    private boolean first, canExtend;
+    private boolean first;
+    private boolean canExtend; // Indica se è possibile estendere le foglie dell'albero
+
     private final MNKCellState MY_STATE, OPPONENT_STATE;
     private final MNKGameState WIN_STATE, LOSS_STATE;
     private final int WIN_SCORE, LOSS_SCORE, DRAW_SCORE;
 
-    private int MAX_HEIGHT, EXTEND_HEIGHT;
+    private int MAX_HEIGHT;     // Altezza dell'albero da mantenere a partire dall'attuale radice
+    private int EXTEND_HEIGHT;  // Numero di livelli da generare quando si estende l'albero
+    private final int MAX_EVAL; // Numero massimo di mosse da valutare per nodo (nel caso di mosse non critiche)
 
     private final int PRIORITY_1, PRIORITY_2, PRIORITY_3, PRIORITY_4;
-    private final int MAX_EVAL;
 
     /**
      * @implNote Costo: Θ(1)
@@ -82,7 +79,7 @@ public class GameTree {
         }
         else {
             int eval;
-            for (Node child : node.children) { child.alphabeta = false; }
+            for (Node child : node.children) { child.alphabeta = false; } // Marca tutti i nodi come non elaborati da alphabeta
 
             if (myNode) {
                 eval = Integer.MAX_VALUE;
@@ -172,6 +169,7 @@ public class GameTree {
 
         Node iter = node;
 
+        // Per ogni mossa, valuta le celle circostanti libere
         while (iter != null) {                                                                                                      // -|
             for (int i = -1; i <= 1; i++) {                                                                                         //  | O(8 * h) = O(h)
                 for (int j = -1; j <= 1; j++) {                                                                                     //  | h = altezza albero
@@ -193,13 +191,13 @@ public class GameTree {
                      * */
 
                     board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                               // O(max{M, N}*K)
-                    int playerMovesToWin = board.getMovesToWinAt(toVisit_x, toVisit_y, PLAYING_STATE);
+                    int currentPlayerMovesToWin = board.getMovesToWinAt(toVisit_x, toVisit_y, PLAYING_STATE);
                     int oppositeMovesToWin = board.getMovesToWinAt(toVisit_x, toVisit_y, WAITING_STATE);
 
                     EstimatedPosition estimation = null;
 
                     // Mossa vincente per me
-                    if (playerMovesToWin == 1) {
+                    if (currentPlayerMovesToWin == 1) {
                         estimation = new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_1);
                     }
                     // Blocca mossa vincente dell'avversario
@@ -208,7 +206,7 @@ public class GameTree {
                     }
 
                     // Cerco un vicolo cieco a mio favore
-                    if (playerMovesToWin == 2) {
+                    if (currentPlayerMovesToWin == 2) {
                         board.setAt(toVisit_x, toVisit_y, PLAYING_STATE);                                                           // O(max{M, N})
                         board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                           // O(max{M, N}*K)
                         int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, PLAYING_STATE);     // O(max{M, N})
@@ -233,7 +231,7 @@ public class GameTree {
 
                     // Valuto la qualità della mossa non critica
                     if (estimation == null) {
-                        int aligned = target - playerMovesToWin + 1;
+                        int aligned = target - currentPlayerMovesToWin + 1;
                         int blocked = target - oppositeMovesToWin;
 
                         estimation = new EstimatedPosition(toVisit_x, toVisit_y, aligned, blocked);
@@ -271,7 +269,7 @@ public class GameTree {
 
             int i=0;
             int score = moves.peek().score;
-            while (moves.size() > 0) {                                                                                          // O(p) p = Numero di iterazioni
+            while (moves.size() > 0) {                                                                                          // O(p) p = Numero di iterazioni -> p ~ [MAX_EVAL]
                 // - Per le mosse critiche valuto tutte quelle che hanno lo stesso score e termino quando ne trovo una diversa
                 //   (idea di base: se devo bloccare/vincere non dovrò preoccuparmi di fare altro)
                 if (moves.peek().score >= PRIORITY_4 && moves.peek().score != score) { break; }
@@ -307,8 +305,8 @@ public class GameTree {
         BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);       // Θ(M*N)
         board.setAt(firstMove.j, firstMove.i, firstMove.state);                     // Θ(1) [Dato che board è appena stato istanziato]
 
-        createTree(root, !first, MAX_HEIGHT, board);                                // O( h(MK + NK + log(h)) )
-        alphabeta(root, first, LOSS_SCORE, WIN_SCORE);                              // O(p^h)
+        createTree(root, !first, MAX_HEIGHT, board);                                // O( [MAX_HEIGHT] * h(MK + NK + log(h)) ) = O( h(MK + NK + log(h)) )
+        alphabeta(root, first, LOSS_SCORE, WIN_SCORE);                              // O([MAX_EVAL]^[MAX_HEIGHT]]) = O(c)
     }
 
     /**
@@ -333,11 +331,11 @@ public class GameTree {
     /**
      * Estende tutte le foglie dell'albero radicato nel nodo indicato
      * @param node Nodo di partenza
-     * @implNote Costo (pessimo): O( p^h * h(MK + NK + log(h)) )     p^h = numero foglie ipotizzando un albero con p figli per ciascun nodo
+     * @implNote Costo (pessimo): O( [MAX_EVAL]^[MAX_HEIGHT] * h(MK + NK + log(h)) ) = O( h(MK + NK + log(h)) )
      * */
     private void extendLeaves(Node node) {
         if (node.isLeaf() && !node.endState) {
-            extendNode(node, EXTEND_HEIGHT);                                              // O( h(MK + NK + log(h)) )
+            extendNode(node, EXTEND_HEIGHT);                                              // O( [EXTEND_HEIGHT] * h(MK + NK + log(h)) ) =  O( h(MK + NK + log(h)) )
         }
         else {
             for (Node child : node.children) {
@@ -349,13 +347,13 @@ public class GameTree {
     /**
      * Sposta la radice dell'albero al nodo contenente la mossa dell'avversario corrispondente
      * @param move Mossa dell'avversario
-     * @implNote Costo (pessimo): O( p^h * h(MK + NK + log(h)) )     p = numero di figli per nodo<br/>
-     *           Costo (ottimo): O(p)
+     * @implNote Costo (pessimo): O( h(MK + NK + log(h)) )
+     *           Costo (ottimo): O(c)   c = costante
      * */
     public void setOpponentMove(MNKCell move) {
         Node bestChild = null;
 
-        for (Node child : root.children) {                                                              // O(p)
+        for (Node child : root.children) {                                                              // O([MAX_EVAL]) = O(c)
             if (child.action.equals(move)) {
                 bestChild = child;
                 break;
@@ -366,37 +364,36 @@ public class GameTree {
         if (bestChild == null) {
             // Creo un nuovo nodo e genera il sotto-albero radicato
             Node new_root = new Node(root, move);
-            root.setSelectedChild(new_root);
+            root.setAsOnlyChild(new_root);
             root = new_root;
-            extendNode(this.root, first ? MAX_HEIGHT+1 : MAX_HEIGHT);                                   // O( h(MK + NK + log(h)) )
-            alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);      // O(p^h)
+            extendNode(this.root, first ? MAX_HEIGHT+1 : MAX_HEIGHT);                                   // O( [MAX_HEIGHT] * h(MK + NK + log(h)) ) = O( h(MK + NK + log(h)) )
+            alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);      // O([MAX_EVAL]^[MAX_HEIGHT]]) = O(c)
 
             canExtend = false;
         }
         else {
             // Sposto la radice
-            root.setSelectedChild(bestChild);
+            root.setAsOnlyChild(bestChild);
             root = bestChild;
 
             // Eventualmente estendo
             if (canExtend) {
-                extendLeaves(root);                                                                     // O( p^h * h(MK + NK + log(h)) )
-                alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);            // O(p^h)
+                extendLeaves(root);                                                                     // O( h(MK + NK + log(h)) )
+                alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);            // O([MAX_EVAL]^[MAX_HEIGHT]]) = O(c)
             }
             canExtend = !canExtend;
         }
-
     }
 
     /**
      * Sposta la radice dell'albero al nodo contenente la mossa migliore
      * @return Mossa da eseguire
-     * @implNote Costo (pessimo): O( p^h * h(MK + NK + log(h)) ) <br/>
-     *           Costo (ottimo): O(p)
+     * @implNote Costo (pessimo): O( h(MK + NK + log(h)) ) <br/>
+     *           Costo (ottimo): O(c)   c = costante
      * */
     public MNKCell nextMove() {
         Node nextChild = root.children.peek();
-        for (Node child : root.children) {                                                          // O(p)
+        for (Node child : root.children) {                                                          // O([MAX_EVAL]) = O(c)
             //System.out.println(child.action + " " + child.score + " " + child.alphabeta);
             if (child.score > nextChild.score && child.alphabeta) {
                 nextChild = child;
@@ -405,13 +402,13 @@ public class GameTree {
         //System.out.println();
 
         // Sposto la radice
-        root.setSelectedChild(nextChild);
+        root.setAsOnlyChild(nextChild);
         root = nextChild;
 
         // Eventualmente estendo
         if (canExtend) {
-            extendLeaves(root);                                                                     // O( p^h * h(MK + NK + log(h)) )
-            alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);            // O(p^h)
+            extendLeaves(root);                                                                     // O( h(MK + NK + log(h)) )
+            alphabeta(root, root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);            // O([MAX_EVAL]^[MAX_HEIGHT]]) = O(c)
         }
         canExtend = !canExtend;
 

@@ -26,7 +26,7 @@ public class Node {
      * Cancella la lista di figli e imposta come figlio il nodo in input
      * @implNote Costo: O(1)
      * */
-    public void setSelectedChild(Node child) {
+    public void setAsOnlyChild(Node child) {
         this.children = new LinkedList<>();
         this.children.add(child);
     }
