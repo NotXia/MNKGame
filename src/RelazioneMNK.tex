@@ -88,8 +88,9 @@ Le classi implementate dall'algoritmo sono le seguenti:
 
 \subsection*{Funzionamento generale}
 Data l'impossibilità di generare tutti i possibili scenari, si rende necessario trovare e valutare solo le mosse realmente proficue tramite funzioni euristiche.\\
-Inoltre, bisogna limitare la generazione in altezza dell'albero per mantenere accettabile il tempo di risposta dell'algoritmo, rendendo quindi necessario valutare lo stato delle foglie contenenti configurazioni di gioco intermedie.\\
-(((((Le funzioni euristiche di questo algoritmo si basano sul numero di allineamenti effettivi e possibili del giocatore e dell'avversario)))))).
+Inoltre, bisogna limitare la generazione in altezza dell'albero per mantenere accettabile il tempo di risposta dell'algoritmo, rendendo quindi necessario valutare lo stato delle foglie contenenti configurazioni di gioco intermedie ed estendere i nodi non ancora terminali.
+
+\newpage
 
 \subsection*{Quantificazione degli allineamenti}
 \subsubsection*{Descrizione}
@@ -154,8 +155,8 @@ Per trovare il numero di mosse ottimali per ciascuna cella, alla posizione $i$-e
 \end{algorithm*}\\
 Per calcolare i valori in relazione all'avversario è sufficiente invertire \texttt{PLAYER} e \texttt{OPPONENT}.
 \subsubsection*{Costo computazionale}
-L'algoritmo deve necessariamente iterare per intero il vettore $I$ con un costo di $\Theta(I.\text{length})$, in aggiunta, per ciascun ciclo c'è la possibilità di dover propagare la tupla calcolata alle celle antecedenti.\\
-Nel caso pessimo, quindi, si ha un costo computazionale di O$(I.\texttt{length} \cdot K)$, ovvero quando la propagazione avviene per ogni posizione.
+L'algoritmo deve necessariamente iterare per intero il vettore $I$ con un costo di $\Theta(n)$, in aggiunta, per ciascun ciclo c'è la possibilità di dover propagare la tupla calcolata alle celle antecedenti.\\
+Nel caso pessimo, quindi, si ha un costo computazionale di O$(n \cdot K)$, ovvero quando la propagazione avviene per ogni posizione.
 \subsection*{Generazione tuple}
 \subsubsection*{Descrizione}
 La classe \texttt{BoardStatus} implementa le funzioni \texttt{generateMovesToWinAt} e \texttt{generateGlobalMovesToWin} che utilizzano il metodo \texttt{getScoresArray} per generare le tuple rispetto ad una riga, colonna o diagonale.\\
@@ -171,10 +172,12 @@ La funzione \texttt{generateMovesToWinAt}, nel caso pessimo, ha costo O$(\texttt
 Nel caso ottimo, invece, ha costo $\Theta(1)$, ovvero quando le tuple sono già state generate e memorizzate nelle matrici.\\
 La funzione \texttt{generateGlobalMovesToWin}, nel caso pessimo, ha costo O$(MNK)$ perché bisogna iterare l'intera griglia di gioco.
 
+\newpage
+
 \subsection*{Euristica su configurazioni intermedie}
 \subsubsection*{Descrizione}
 La classe \texttt{GameTree} implementa il metodo \texttt{setHeuristicScoreOf} che prende in input un nodo dell'albero, un oggetto \texttt{BoardStatus} e un flag per indicare chi deve eseguire la prossima mossa e imposta a quel nodo un punteggio euristico.\\
-L'implementazione prevede di generare il numero di mosse necessarie per vincere a tutte le celle e di ricavare, sia per il giocatore che per l'avversario, il numero di possibili scenari vincenti che necessitano di piazzare da $1$ a $n$ mosse e con queste calcola il punteggio finale assegnando un peso per ciascuna tipologia.\\
+L'implementazione prevede di generare, sia per il giocatore che per l'avversario, il numero di possibili scenari vincenti che necessitano di piazzare da $1$ a $x$ mosse e con queste calcola il punteggio finale assegnando un peso per ciascuna tipologia.\\
 Vengono quindi gestite tre casistiche: 
 \begin{enumerate}
 \setlength\itemsep{0.05cm}
@@ -184,6 +187,8 @@ Vengono quindi gestite tre casistiche:
 \end{enumerate}
 \subsubsection*{Costo computazionale}
 La funzione \texttt{setHeuristicScoreOf} ha costo, nel caso pessimo, di O$(MNK)$ dato dalla chiamata al metodo \texttt{generateGlobalMovesToWin}.
+
+\newpage
 
 \subsection*{Ricerca della mossa successiva}
 \subsubsection*{Descrizione}
@@ -203,7 +208,7 @@ Altrimenti & Piazza una mossa che aumenta un allineamento del giocatore dando pr
 \end{tabular}
 \end{table}
 $ $\\
-Le mosse con priorità $\leq 4$ sono considerate critiche in quanto permettono di aprire scenari a vittoria o sconfitta certa.
+Le mosse con priorità $\leq 4$ sono considerate critiche in quanto permettono di aprire scenari di vittoria o sconfitta certa.
 \subsubsection*{Costo computazionale}
 Il costo computazionale è O$(h(MK+NK+\log h))$, dove $h$ è l'altezza dell'albero di gioco.\\
 Il costo è dato dal ciclo di costo $\Theta(h)$ che ripercorre l'albero fino alla radice e per ciascuna iterazione analizza al più un numero costante di 8 celle (tutte le possibili direzioni). Il costo maggiore all'interno del ciclo è dato dalla chiamata alla funzione \texttt{generateMovesToWinAt} di costo O$(MK+NK)$.\\
@@ -255,16 +260,16 @@ La funzione è si basa sulla seguente equazione di ricorrenza:
 }
 \end{equation*}
 Dove $h$ è l'altezza dell'albero, $p$ è il numero di iterazioni del ciclo \texttt{while} (nodi promettenti) e $q$ è il numero di possibili mosse (dimensione della coda con priorità).\\
-Assumendo che il numero di iterazioni $p$ sia in media coerente con il valore soglia stabilito, possiamo trattarlo come una costante, quindi la complessità computazionale del caso ricorsivo è:
+Assumendo che il numero di iterazioni $p$ sia mediamente coerente con il valore soglia fissato, possiamo trattarlo come costante, quindi la complessità computazionale del caso ricorsivo è:
 \begin{equation*}
 h(MK+NK+\log h)+\cancel{p(M+N)}+\cancel{p}\log q+\cancel{p}T(depth-1)=\\
 \end{equation*}
 \begin{equation*}
-=h(MK+NK+\log h)+\log q+T(depth-1)=\\
+=h(MK+NK)+h\log h + \log q+T(depth-1)
 \end{equation*}
-\begin{equation*}
-=h(MK+NK)+h\log h + \log q+T(depth-1)=\\
-\end{equation*}
+
+\newpage
+$ $\\
 Risolvendo per iterazione, otteniamo che il costo è:
 \begin{equation*}
 =(h(MK+NK)+h\log h + \log q)\cdot (depth\cancel{-1}) + \cancel{MNK}=\\
@@ -272,28 +277,26 @@ Risolvendo per iterazione, otteniamo che il costo è:
 \begin{equation*}
 =depth \cdot h(MK+NK)+depth(h\log h + \log q)\\
 \end{equation*}
-Dimostriamo, applicando la definizione, che $q =$ O$(h)$. 
+Dimostriamo che $q =$ O$(h)$. 
 Fissiamo due successioni $q_n$ e $h_n$, rappresentanti rispettivamente il numero di possibili mosse e l'altezza dell'albero nel progredire della partita, e proviamo che che $\exists c > 0, n_0 \geq 0 \text{ t.c. } \forall n \geq n_0 : q_n \leq c \cdot h_n$.\\
 Intuitivamente l'altezza dell'albero di gioco cresce in maniera lineare nel corso della partita, mentre il numero di possibili mosse cresce per poi diminuire una volta raggiunto un punto di "saturazione".\\
 Quindi, ponendo $c=1$, esiste un $n_0$ tale che $\forall n \geq n_0:$ $q_n \leq h_n$, provando che $q =$ O$(h)$.\\
 La complessità ottenuta è quindi:
 \begin{equation*}
-depth \cdot h(MK+NK)+depth(h\log h)=\\
-\end{equation*}
-\begin{equation*}
-=depth \cdot h(MK+NK+\log h).\\
+depth \cdot h(MK+NK)+depth(h\log h)=depth \cdot h(MK+NK+\log h).\\
 \end{equation*}
 Il costo computazionale della funzione \texttt{createTree} è O$(depth \cdot h(MK+NK+\log h))$, dove $h$ è l'altezza dell'albero e \textit{depth} è il numero di livelli da generare.
 
 \subsection*{Estensione dell'albero di gioco}
 \subsubsection*{Descrizione}
-Poiché l'albero di gioco viene generato parzialmente in altezza, è necessario estenderlo con ulteriori livelli per garantire la presenza della mossa successiva e mantenere affidabile la qualità della scelta delle mosse.\\
 La funzione \texttt{extendLeaves} permette di estendere di un determinato numero di livelli tutte le foglie dell'albero che contengono configurazioni di gioco intermedie.\\
 Per estendere un nodo viene usata la funzione ausiliaria \texttt{extendNode} che prende in input un nodo e il numero di livelli ulteriori da generare e richiama la funzione \texttt{createTree} su quel nodo.
 \subsubsection*{Costo computazionale}
 La funzione \texttt{extendNode} ha costo computazionale O$(depth \cdot h(MK+NK+\log h))$ dato dalla chiamata a \texttt{createTree}.\\
-Il costo, nel caso pessimo, di \texttt{extendLeaves} è quindi O$(n_f\cdot(depth \cdot h(MK+NK+\log h)))$ dove $n_f$ è il numero di foglie dell'albero. Poiché l'albero viene sempre esteso per un numero costante di livelli il costo è O$(n_f\cdot h(MK+NK+\log h))$.\\
-\textbf{CI DOBBIAMO PENSARE SE AGGIUNGERLO ($p^h$ e Xia sa di cosa parlo)}
+Il costo, nel caso pessimo, di \texttt{extendLeaves} è quindi O$(n_f\cdot(depth \cdot h(MK+NK+\log h)))$ dove $n_f$ è il numero di foglie dell'albero.\\
+Poiché l'albero viene sempre esteso per un numero costante di livelli e ciascun nodo ha in media un numero fissato di figli, il costo è O$(h(MK+NK+\log h))$.\\
+
+\newpage
 
 \subsection*{Operazioni sull'albero di gioco}
 \subsubsection*{Descrizione}
@@ -317,18 +320,19 @@ Le operazioni previste sull'albero di gioco sono le seguenti:
 \begin{tabular}{|l|p{4in}|}	% 2 colonne separate da | allineate a sinistra con la seconda colonna "paragrafo da 4 inch"
 \hline	% hline per la linea orizzontale
 \textbf{Funzione} & \Centering\textbf{Costo computazionale (caso pessimo)} \\ \hline
-\texttt{generate} & O$(depth \cdot h(MK+NK+\log h))$ dato dalla chiamata a \texttt{createTree} \\ \hline
-\texttt{setOpponentMove} & O$(n_f \cdot h(MK+NK+\log h))$ dato dalla chiamata a \texttt{extendLeaves} (se il nodo contenente la mossa esiste). \\
-& O$(n_f\cdot(depth \cdot h(MK+NK+\log h)))$ se è necessario generare un nuovo nodo con il corrispondente sottoalbero radicato \\ \hline
-\texttt{nextMove} & O$(n_f \cdot h(MK+NK+\log h))$ dato dalla chiamata a \texttt{extendLeaves} \\ \hline
+\texttt{generate} & O$(h(MK+NK+\log h))$ dato dalla chiamata a \texttt{createTree} \\ \hline
+\texttt{setOpponentMove} & O$(h(MK+NK+\log h))$ dato dalla chiamata a \texttt{extendLeaves} o \texttt{extendNode} \\ \hline
+\texttt{nextMove} & O$(h(MK+NK+\log h))$ dato dalla chiamata a \texttt{extendLeaves} o \texttt{extendNode} \\ \hline
 \end{tabular}
 \end{table}
+\subsubsection*{Costo computazione di \texttt{AlphaBeta Pruning}}
+\textbf{POSSIBILE PICCOLA PARENTESI SU ALPHABETA PRUNING}
 
 \newpage
 \subsection*{Interfaccia \texttt{MNKPlayer}}
 \subsubsection*{Descrizione}
 L'interfaccia \texttt{MNKPlayer} viene implementata dalla classe \texttt{OurPlayer} che istanzia un oggetto \texttt{GameTree} su cui esegue le operazioni per generare e manipolare l'albero di gioco.\\
-La funzione \texttt{selectCell}, quindi, restituisce la mossa estraendola dell'oggetto \texttt{GameTree} basandosi sul seguente pseudocodice:
+La funzione \texttt{selectCell}, quindi, restituisce la mossa estraendola dall'oggetto \texttt{GameTree} basandosi sul seguente pseudocodice:
 \begin{algorithm*}
 \SetAlgoLined
 \texttt{MNKCell} mossaScelta $\gets$ \texttt{null}\\
@@ -347,7 +351,7 @@ La funzione \texttt{selectCell}, quindi, restituisce la mossa estraendola dell'o
 }
 \end{algorithm*}
 \subsubsection*{Costo computazionale}
-Alla prima chiamata di \texttt{selectCell} il costo computazionale è O$(depth \cdot h(MK+NK+\log h))$, ovvero il costo per generare l'albero iniziale. Negli altri casi, invece, il costo è, nel caso pessimo, di O$(n_f\cdot(depth \cdot h(MK+NK+\log h)))$, ovvero quando l'avversario esegue la mossa al di fuori delle previsioni.
+La funzione \texttt{selectCell} ha costo O$(h(MK+NK+\log h))$ dato dalla chiamata a \texttt{generate} o \texttt{setOpponentMove} o \texttt{nextMove}.
 
 \section*{Conclusione}
 L'algoritmo implementato è in grado di giocare in modo accettabile sulle configurazioni note di MNK-Game. La maggiore criticità risiede nel fatto che l'albero di gioco è generato in modo parziale in altezza, rendendo possibile il verificarsi di scenari in cui non è possibile prevedere vicoli ciechi, ovvero situazioni di sconfitta certa.\\
