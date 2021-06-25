@@ -20,7 +20,7 @@ public class OurPlayer implements MNKPlayer {
     }
 
     /**
-     * @implNote Costo (pessimo): O( p^h * depth*h(MK + NK + log(h)) )
+     * @implNote Costo (pessimo): O( p^h * h(MK + NK + log(h)) )
      * */
     public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
         /*long start_t, end_t, elapsed, min;
@@ -31,28 +31,26 @@ public class OurPlayer implements MNKPlayer {
 
         if (this.gameTree.isEmpty()) {
             if (this.first) {
+                // Se gioco per primo piazzo la mossa al centro della griglia
                 outCell = new MNKCell(rows/2, columns/2, MNKCellState.P1);
-                this.gameTree.generate(outCell);                                        // O( depth*h(MK + NK + log(h)) )
+                this.gameTree.generate(outCell);                                        // O( h(MK + NK + log(h)) )
             }
             else {
-                this.gameTree.generate(MC[MC.length-1]);                                // O( depth*h(MK + NK + log(h)) )
-                outCell = this.gameTree.nextMove();                                     // O( p^h * depth*h(MK + NK + log(h)) )
-
+                this.gameTree.generate(MC[MC.length-1]);                                // O( h(MK + NK + log(h)) )
+                outCell = this.gameTree.nextMove();                                     // O( p^h * h(MK + NK + log(h)) )
             }
         }
         else {
-            this.gameTree.setOpponentMove(MC[MC.length-1]);                             // O( p^h * depth*h(MK + NK + log(h)) )
-            outCell = this.gameTree.nextMove();                                         // O( p^h * depth*h(MK + NK + log(h)) )
+            this.gameTree.setOpponentMove(MC[MC.length-1]);                             // O( p^h * h(MK + NK + log(h)) )
+            outCell = this.gameTree.nextMove();                                         // O( p^h * h(MK + NK + log(h)) )
         }
 
-        /*if (true) {
-            end_t = System.currentTimeMillis();
-            elapsed = (end_t - start_t);
-            min = elapsed / (60*1000);
-            sec = (elapsed - min*60*1000)/1000.0;
-            System.out.println("Tempo impiegato: " + sec + " sec");
-            System.out.println();
-        }*/
+        /*end_t = System.currentTimeMillis();
+        elapsed = (end_t - start_t);
+        min = elapsed / (60*1000);
+        sec = (elapsed - min*60*1000)/1000.0;
+        System.out.println("Tempo impiegato: " + sec + " sec");
+        System.out.println();*/
 
         return outCell;
     }

@@ -7,7 +7,8 @@ public class Node {
     public LinkedList<Node> children;
     public MNKCell action;
     public int score;
-    public boolean alphabeta, endState;
+    public boolean alphabeta; // Indica se il nodo è stato elaborato da Alphabeta pruning
+    public boolean endState;  // Indica se il nodo contiene una configurazione di gioco finale
 
     /**
      * @implNote Costo: O(1)
@@ -22,24 +23,7 @@ public class Node {
     }
 
     /**
-     * Restituisce una lista contenente tutte le celle marcate fino alla mossa attuale
-     * @implNote Costo: O(h)    h = altezza dell'albero
-     * */
-    public LinkedList<MNKCell> getMarkedCells() {
-        LinkedList<MNKCell> markedCells = new LinkedList<>();
-        Node iter = this.parent;
-
-        markedCells.addLast(this.action);
-        while (iter != null) {
-            markedCells.addLast(iter.action);
-            iter = iter.parent;
-        }
-
-        return markedCells;
-    }
-
-    /**
-     * Svuota la lista di figli e imposta come figlio il nodo in input
+     * Cancella la lista di figli e imposta come figlio il nodo in input
      * @implNote Costo: O(1)
      * */
     public void setSelectedChild(Node child) {
@@ -54,14 +38,4 @@ public class Node {
     public boolean isLeaf() {
         return children.size() == 0;
     }
-
-    @Override
-    public String toString() {
-        return "Node{ " +
-                "children=" + children +
-                ", action=" + action +
-                ", score=" + score +
-                " }";
-    }
-
 }
