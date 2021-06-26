@@ -55,7 +55,7 @@ public class BoardStatus {
         secondaryDiagonalScore_opponent = new Score[columns][rows];
 
         NOT_WINNABLE_SCORE = target+1;
-    };
+    }
 
     /**
      * Indica se una coordinata è valida
@@ -145,7 +145,7 @@ public class BoardStatus {
      * @param toCheckState Lo stato da controllare (giocatore o avversario)
      * @implNote Costo (pessimo): O(board.length * K)
      * */
-    private Score[] getScoresArray(MNKCellState board[], MNKCellState toCheckState) {
+    private Score[] getScoresArray(MNKCellState[] board, MNKCellState toCheckState) {
         MNKCellState oppositeState = (toCheckState == MNKCellState.P1) ? MNKCellState.P2 : MNKCellState.P1;
         Score[] s = new Score[board.length];
 
@@ -338,7 +338,8 @@ public class BoardStatus {
 
     /**
      * Riempie tutte le matrici degli score
-     * @implNote Costo (pessimo): O(M*N*K) = O(2*4*M*N*K) L'idea è che per generare tutti gli score, bisogna iterare su tutte le celle disponibili
+     * @implNote Costo (pessimo): O(M*N*K) = O(2*4*M*N*K) L'idea è che per generare tutti gli score, bisogna iterare su tutte le celle disponibili<br/>
+     *           Costo (ottimo): Θ(1)
      * */
     public void generateGlobalMovesToWin() {
         for (int x=0; x<columns; x++) { fillColumnScoreAt(x, 0); }                      // O(N * M*K)
@@ -401,7 +402,7 @@ public class BoardStatus {
      * Restituisce un array contenente il numero di possibili modi per vincere
      * @param toCheckState Indica lo stato della cella che si vuole controllare (giocatore o avversario)
      * @return Array di interi dove se v[i] = q allora ci sono q modi per vincere che necessitano di un numero di i mosse
-     * @implNote Costo: O(M*N) = O(4*M*N) L'idea è che bisogna scorrere tutte le celle delle matrici degli score
+     * @implNote Costo: O(M*N) = O(4*M*N)
      *           [GLI SCORE DEVONO ESSERE STATI GENERATI]
      * */
     public int[] getAllPossibleWinningScenariosCount(MNKCellState toCheckState) {

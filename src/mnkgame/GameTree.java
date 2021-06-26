@@ -35,14 +35,18 @@ public class GameTree {
         this.WIN_STATE = first ? MNKGameState.WINP1 : MNKGameState.WINP2;
         this.LOSS_STATE = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
 
-
-        /** TODO Altezza albero variabile */
-        //double tot = M*N*K;
-        //int height = (int)Math.floor( 70/(Math.log(tot)/Math.log(2)) ); // Va messo dispari
-        //this.MAX_HEIGHT = height % 2 == 0 ? height-1 : height;
-        //System.out.println(this.MAX_HEIGHT);
-        this.MAX_HEIGHT = 9;
         this.EXTEND_HEIGHT = 2;
+        this.MAX_EVAL = 3;
+
+        // Calcolo dell'altezza ottimale
+        int height = 1;
+        double x;
+        do {
+            x = Math.pow(MAX_EVAL, height) * height * (M*K + N*K + Math.log10(height));
+            height += 2;
+        }
+        while (x < 10000000);
+        this.MAX_HEIGHT = height-2;
 
         this.WIN_SCORE = 10000000;
         this.LOSS_SCORE = -10000000;
@@ -52,7 +56,6 @@ public class GameTree {
         this.PRIORITY_2 = target * 1000;
         this.PRIORITY_3 = target * 200;
         this.PRIORITY_4 = target * 100;
-        this.MAX_EVAL = 3;
     }
 
     /**
@@ -251,7 +254,7 @@ public class GameTree {
      * @param parentNode Nodo radice
      * @param depth Profondità di generazione
      * @param board Mantiene memorizzata la situazione attuale della griglia
-     * @implNote Costo: O( depth*h(MK + NK + log(h)) + MNK ) = O( depth*h(MK + NK + log(h)) )  h = altezza albero
+     * @implNote Costo: O( p^depth * h(MK + NK + log(h)) )   h = altezza albero  |  p = Numero di iterazioni
      * */
     private Node createTree(Node parentNode, boolean mePlaying, int depth, BoardStatus board) {
         board.generateMovesToWinAt(parentNode.action.j, parentNode.action.i);                                                   // O(max{M, N}*K)
@@ -273,6 +276,7 @@ public class GameTree {
                 // - Per le mosse critiche valuto tutte quelle che hanno lo stesso score e termino quando ne trovo una diversa
                 //   (idea di base: se devo bloccare/vincere non dovrò preoccuparmi di fare altro)
                 if (moves.peek().score >= PRIORITY_4 && moves.peek().score != score) { break; }
+                //if (moves.peek().score >= PRIORITY_4 && i >= 1) { break; }
                 // - Per le mosse di altro tipo ne estraggo un paio (tra le più promettenti) e le valuto
                 if (moves.peek().score < PRIORITY_4 && i >= MAX_EVAL) { break; }
 
@@ -305,14 +309,14 @@ public class GameTree {
         BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);       // Θ(M*N)
         board.setAt(firstMove.j, firstMove.i, firstMove.state);                     // Θ(1) [Dato che board è appena stato istanziato]
 
-        createTree(root, !first, MAX_HEIGHT, board);                                // O( [MAX_HEIGHT] * h(MK + NK + log(h)) ) = O( h(MK + NK + log(h)) )
+        createTree(root, !first, MAX_HEIGHT, board);                                // O( [MAX_EVAL]^[MAX_HEIGHT] * h(MK + NK + log(h)) ) = O( h(MK + NK + log(h)) )
         alphabeta(root, first, LOSS_SCORE, WIN_SCORE);                              // O([MAX_EVAL]^[MAX_HEIGHT]]) = O(c)
     }
 
     /**
      * Estende di una determinata profodità l'albero radicato nel nodo indicato
      * @param node Nodo da estendere
-     * @implNote Costo: O( depth*h(MK + NK + log(h)) )
+     * @implNote Costo: O( p^depth * h(MK + NK + log(h)) )
      * */
     private void extendNode(Node node, int depth) {
         BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);
@@ -325,7 +329,7 @@ public class GameTree {
         }
 
         boolean mePlaying = node.action.state == MY_STATE;
-        createTree(node, !mePlaying, depth, board);                                 // O( depth*h(MK + NK + log(h)) )
+        createTree(node, !mePlaying, depth, board);                                 // O( p^depth * h(MK + NK + log(h)) )
     }
 
     /**
@@ -335,7 +339,7 @@ public class GameTree {
      * */
     private void extendLeaves(Node node) {
         if (node.isLeaf() && !node.endState) {
-            extendNode(node, EXTEND_HEIGHT);                                              // O( [EXTEND_HEIGHT] * h(MK + NK + log(h)) ) =  O( h(MK + NK + log(h)) )
+            extendNode(node, EXTEND_HEIGHT);                                              // O( [MAX_EVAL]^[EXTEND_HEIGHT] * h(MK + NK + log(h)) ) =  O( h(MK + NK + log(h)) )
         }
         else {
             for (Node child : node.children) {
@@ -366,7 +370,7 @@ public class GameTree {
             Node new_root = new Node(root, move);
             root.setAsOnlyChild(new_root);
             root = new_root;
-            extendNode(this.root, first ? MAX_HEIGHT+1 : MAX_HEIGHT);                                   // O( [MAX_HEIGHT] * h(MK + NK + log(h)) ) = O( h(MK + NK + log(h)) )
+            extendNode(this.root, first ? MAX_HEIGHT+1 : MAX_HEIGHT);                                   // O( [MAX_EVAL]^[MAX_HEIGHT] * h(MK + NK + log(h)) ) = O( h(MK + NK + log(h)) )
             alphabeta(this.root, this.root.action.state==MY_STATE, LOSS_SCORE, WIN_SCORE);      // O([MAX_EVAL]^[MAX_HEIGHT]]) = O(c)
 
             canExtend = false;
@@ -394,12 +398,10 @@ public class GameTree {
     public MNKCell nextMove() {
         Node nextChild = root.children.peek();
         for (Node child : root.children) {                                                          // O([MAX_EVAL]) = O(c)
-            //System.out.println(child.action + " " + child.score + " " + child.alphabeta);
             if (child.score > nextChild.score && child.alphabeta) {
                 nextChild = child;
             }
         }
-        //System.out.println();
 
         // Sposto la radice
         root.setAsOnlyChild(nextChild);

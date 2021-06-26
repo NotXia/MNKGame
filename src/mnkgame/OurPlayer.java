@@ -23,10 +23,6 @@ public class OurPlayer implements MNKPlayer {
      * @implNote Costo (pessimo): O( h(MK + NK + log(h)) )
      * */
     public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
-        /*long start_t, end_t, elapsed, min;
-        double sec;
-        start_t = System.currentTimeMillis();*/
-
         MNKCell outCell;
 
         if (this.gameTree.isEmpty()) {
@@ -44,13 +40,6 @@ public class OurPlayer implements MNKPlayer {
             this.gameTree.setOpponentMove(MC[MC.length-1]);                             // O( h(MK + NK + log(h)) )
             outCell = this.gameTree.nextMove();                                         // O( h(MK + NK + log(h)) )
         }
-
-        /*end_t = System.currentTimeMillis();
-        elapsed = (end_t - start_t);
-        min = elapsed / (60*1000);
-        sec = (elapsed - min*60*1000)/1000.0;
-        System.out.println("Tempo impiegato: " + sec + " sec");
-        System.out.println();*/
 
         return outCell;
     }
