@@ -276,7 +276,6 @@ public class GameTree {
                 // - Per le mosse critiche valuto tutte quelle che hanno lo stesso score e termino quando ne trovo una diversa
                 //   (idea di base: se devo bloccare/vincere non dovrò preoccuparmi di fare altro)
                 if (moves.peek().score >= PRIORITY_4 && moves.peek().score != score) { break; }
-                //if (moves.peek().score >= PRIORITY_4 && i >= 1) { break; }
                 // - Per le mosse di altro tipo ne estraggo un paio (tra le più promettenti) e le valuto
                 if (moves.peek().score < PRIORITY_4 && i >= MAX_EVAL) { break; }
 
