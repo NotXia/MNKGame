@@ -180,7 +180,7 @@ public class MNKPlayerTesterKnownScenarios {
 	}
 
 	public static void main(String[] args) {
-		VERBOSE = true;
+		//VERBOSE = true;
 
 		int[][] configs =                new int[][]{ new int[]{3, 3, 3}, new int[]{4, 3, 3}, new int[]{4, 4, 3}, new int[]{4, 4, 4}, new int[]{5, 4, 4}, new int[]{5, 5, 4}, new int[]{5, 5, 5}, new int[]{6, 4, 4}, new int[]{6, 5, 4}, new int[]{6, 6, 4}, new int[]{6, 6, 5}, new int[]{6, 6, 6}, new int[]{7, 4, 4}, new int[]{7, 5, 4}, new int[]{7, 6, 4}, new int[]{7, 7, 4}, new int[]{7, 5, 5}, new int[]{7, 6, 5}, new int[]{7, 7, 5}, new int[]{7, 7, 6}, new int[]{8, 4, 4}, new int[]{8, 8, 4}, new int[]{30, 4, 4} };
 		GameState[] expectedResult = new GameState[]{ GameState.DRAW,     GameState.WINP1,    GameState.WINP1,    GameState.DRAW,     GameState.DRAW,     GameState.DRAW,     GameState.DRAW,     GameState.DRAW,     GameState.WINP1,    GameState.WINP1,    GameState.DRAW,     GameState.DRAW,     GameState.DRAW,     GameState.WINP1,    GameState.WINP1,    GameState.WINP1,    GameState.DRAW,     GameState.DRAW,     GameState.DRAW,     GameState.DRAW,     GameState.DRAW,     GameState.WINP1,    GameState.WINP1};

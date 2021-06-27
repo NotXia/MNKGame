@@ -213,19 +213,18 @@ public class MNKPlayerTesterChallengeShort {
 		for (int i=0; i<configs.length; i++) {
 			int[] config = configs[i];
 			M = config[0]; N = config[1]; K = config[2];
-			if (M > 10) {break;}
 
 			for (String pair[] : challenges) {
-				for (int j=0; j<4; j++) {
+				for (int j=0; j<2; j++) {
 					String firstPlayer="", secondPlayer="";
 					try {
-						if (j < 2) { // Due partite come primo giocatore
+						if (j < 1) { // Una partita come primo giocatore
 							Player[0] = (MNKPlayer) Class.forName(pair[0]).getDeclaredConstructor().newInstance();
 							Player[1] = (MNKPlayer) Class.forName(pair[1]).getDeclaredConstructor().newInstance();
 							firstPlayer = pair[0];
 							secondPlayer = pair[1];
 						}
-						else { // Due partite come secondo giocatore
+						else { // Una partita come secondo giocatore
 							Player[0] = (MNKPlayer) Class.forName(pair[1]).getDeclaredConstructor().newInstance();
 							Player[1] = (MNKPlayer) Class.forName(pair[0]).getDeclaredConstructor().newInstance();
 							firstPlayer = pair[1];

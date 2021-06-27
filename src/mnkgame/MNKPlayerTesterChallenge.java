@@ -178,8 +178,7 @@ public class MNKPlayerTesterChallenge {
 
 	public static void main(String[] args) {
 		//VERBOSE = true;
-		//String[] players = new String[]{"mnkgame.OurPlayer", "mnkgame.RandomPlayer", "mnkgame.QuasiRandomPlayer", "mnkgame.DefensivePlayer"};
-		String[] players = new String[]{"mnkgame.OurPlayer", "mnkgame.QuasiRandomPlayer", "mnkgame.OurPlayer2"};
+		String[] players = new String[]{"mnkgame.OurPlayer", "mnkgame.QuasiRandomPlayer", "mnkgame.RandomPlayer"};
 		String highlight = "mnkgame.OurPlayer";
 
 		HashMap<String, Integer> scores = new HashMap<>();
