@@ -13,9 +13,6 @@
 \hyphenpenalty=10000
 \hbadness=10000
 
-% TODO: 
-% SISTEMARE LE PAGINE. GRAZIE.
-
 \begin{document}
 \begin{titlepage}
     \begin{center}
@@ -143,6 +140,7 @@ che rappresentano le informazioni sulla possibile mossa all'$i$-esima cella. \\L
 Per trovare il numero di mosse ottimali per ciascuna cella, alla posizione $i$-esima, avviene una fase di propagazione del punteggio, basato sul seguente pseudocodice:
 \begin{algorithm*}
 \SetAlgoLined
+ \textit{// Se all'$i$-esima posizione è possibile allinearne $K$:}\\ 
  \For{$j \gets 1$ to $K-1$}{
   \textit{// Le mosse precedenti sono migliori, non serve propagare\\}
   \If{$S[i-j].\text{aligned} = K \texttt{ AND } S[i-j].\text{moves} < S[i].\text{moves}$}{
@@ -154,8 +152,7 @@ Per trovare il numero di mosse ottimali per ciascuna cella, alla posizione $i$-e
 \end{algorithm*}\\
 Per calcolare i valori in relazione all'avversario è sufficiente invertire \texttt{PLAYER} e \texttt{OPPONENT}.
 \subsubsection*{Costo computazionale}
-L'algoritmo deve necessariamente iterare per intero il vettore $I$ con un costo di $\Theta(n)$, in aggiunta, per ciascun ciclo c'è la possibilità di dover propagare la tupla calcolata alle celle antecedenti.\\
-Nel caso pessimo, quindi, si ha un costo computazionale di O$(n \cdot K)$, ovvero quando la propagazione avviene per ogni posizione.
+L'algoritmo deve necessariamente iterare per intero il vettore $I$ con un costo di $\Theta(n)$, in aggiunta, per ciascun ciclo c'è la possibilità di dover propagare la tupla calcolata alle celle antecedenti. Nel caso pessimo, quindi, si ha un costo computazionale di O$(n \cdot K)$, ovvero quando la propagazione avviene per ogni posizione.
 \subsection*{Generazione tuple}
 \subsubsection*{Descrizione}
 La classe \texttt{BoardStatus} implementa le funzioni \texttt{generateMovesToWinAt} e \texttt{generateGlobalMovesToWin} che utilizzano il metodo \texttt{getScoresArray} per generare le tuple rispetto ad una riga, colonna o diagonale.\\
@@ -323,7 +320,7 @@ Le operazioni previste dalla classe \texttt{GameTree} sull'albero di gioco sono 
 \texttt{nextMove} & O$(h(MK+NK+\log h))$ dato dalla chiamata a \texttt{extendLeaves} \\ \hline
 \end{tabular}
 \end{table}
-Il costo risulta uguale ma bisogna ricordare che differiscono di una costante non sempre uguale.
+\paragraph*{Nota: }Il costo computazionale per le tre funzioni risulta identico ma bisogna ricordare che differiscono di una costante non sempre uguale.
 \newpage
 \subsubsection*{Costo computazione di \texttt{AlphaBeta Pruning}}
 Il costo computazionale di \texttt{AlphaBeta Pruning} è, nel caso pessimo, O$(m^d)$ dove $m$ è il numero medio di figli per nodo e $d$ è la profondità di ricerca. Poiché nell'algoritmo sia la profondità di ricerca che il numero medio di figli è mantenuta costante, si ha che il costo dell'esecuzione di \texttt{AlphaBeta Pruning} risulta costante su tutte le chiamate.\\
