@@ -73,8 +73,8 @@ public class GameTree {
     }
 
     /**
-     * @implNote Costo (pessimo): O(p^h)  p = numero medio di mosse  h = altezza albero
-     * @implNote Costo (ottimo): O(sqrt(p^h))  p = numero medio di mosse  h = altezza albero
+     * @implNote Costo (pessimo): O(p^h)         p = numero medio di mosse  |  h = altezza albero
+     * @implNote Costo (ottimo): O(sqrt(p^h))
      * */
     private int alphabeta(Node node, boolean myNode, int alpha, int beta) {
         if (node.isLeaf()) {
@@ -190,10 +190,10 @@ public class GameTree {
                      * - Blocco una mossa vincente dell'avversario
                      * - Imposto un vicolo cieco a mio favore
                      * - Blocco un vicolo cieco dell'avversario
-                     * - Scelgo la mossa migliore per me
+                     * - Scelgo la mossa (possibilmente) migliore per me
                      * */
 
-                    board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                               // O(max{M, N}*K)
+                    board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                               // O(MK + NK)
                     int currentPlayerMovesToWin = board.getMovesToWinAt(toVisit_x, toVisit_y, PLAYING_STATE);
                     int oppositeMovesToWin = board.getMovesToWinAt(toVisit_x, toVisit_y, WAITING_STATE);
 
@@ -210,10 +210,10 @@ public class GameTree {
 
                     // Cerco un vicolo cieco a mio favore
                     if (currentPlayerMovesToWin == 2) {
-                        board.setAt(toVisit_x, toVisit_y, PLAYING_STATE);                                                           // O(max{M, N})
-                        board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                           // O(max{M, N}*K)
-                        int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, PLAYING_STATE);     // O(max{M, N})
-                        board.removeAt(toVisit_x, toVisit_y);                                                                       // O(max{M, N})
+                        board.setAt(toVisit_x, toVisit_y, PLAYING_STATE);                                                           // O(M + N)
+                        board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                           // O(MK + NK)
+                        int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, PLAYING_STATE);     // O(M + N)
+                        board.removeAt(toVisit_x, toVisit_y);                                                                       // O(M + N)
 
                         if (possibilities[1] > 1) {
                             estimation = new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_3);
@@ -222,10 +222,10 @@ public class GameTree {
 
                     // Cerco un vicolo cieco a mio sfavore
                     if (estimation == null && oppositeMovesToWin == 2) {
-                        board.setAt(toVisit_x, toVisit_y, WAITING_STATE);                                                           // O(max{M, N})
-                        board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                           // O(max{M, N}*K)
-                        int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, WAITING_STATE);     // O(max{M, N})
-                        board.removeAt(toVisit_x, toVisit_y);                                                                       // O(max{M, N})
+                        board.setAt(toVisit_x, toVisit_y, WAITING_STATE);                                                           // O(M + N)
+                        board.generateMovesToWinAt(toVisit_x, toVisit_y);                                                           // O(MK + NK)
+                        int[] possibilities = board.getAllPossibleWinningScenariosCountAt(toVisit_x, toVisit_y, WAITING_STATE);     // O(M + N)
+                        board.removeAt(toVisit_x, toVisit_y);                                                                       // O(M + N)
 
                         if (possibilities[1] > 1) {
                             estimation = new EstimatedPosition(toVisit_x, toVisit_y, PRIORITY_4);
@@ -257,7 +257,7 @@ public class GameTree {
      * @implNote Costo: O( p^depth * h(MK + NK + log(h)) )   h = altezza albero  |  p = Numero di iterazioni
      * */
     private Node createTree(Node parentNode, boolean mePlaying, int depth, BoardStatus board) {
-        board.generateMovesToWinAt(parentNode.action.j, parentNode.action.i);                                                   // O(max{M, N}*K)
+        board.generateMovesToWinAt(parentNode.action.j, parentNode.action.i);                                                   // O(MK + NK)
         MNKGameState gameState = board.statusAt(parentNode.action.j, parentNode.action.i);
         MNKCellState curr_state = mePlaying ? MY_STATE : OPPONENT_STATE;
 
@@ -281,15 +281,12 @@ public class GameTree {
 
                 EstimatedPosition toVisit = moves.poll();                                                                       // O(log(q)) q = dimensione coda
 
-                int toVisit_x = toVisit.x;
-                int toVisit_y = toVisit.y;
-
-                MNKCell toEvalCell = new MNKCell(toVisit_y, toVisit_x, curr_state);
+                MNKCell toEvalCell = new MNKCell(toVisit.y, toVisit.x, curr_state);
                 Node child = new Node(parentNode, toEvalCell);
 
-                board.setAt(toVisit_x, toVisit_y, curr_state);                                                                  // O(max{M, N})
+                board.setAt(toVisit.x, toVisit.y, curr_state);                                                                  // O(M + N)
                 parentNode.children.add( createTree(child, !mePlaying, depth-1, board) );
-                board.removeAt(toVisit_x, toVisit_y);                                                                           // O(max{M, N})
+                board.removeAt(toVisit.x, toVisit.y);                                                                           // O(M + N)
 
                 i++;
             }
@@ -320,10 +317,10 @@ public class GameTree {
     private void extendNode(Node node, int depth) {
         BoardStatus board = new BoardStatus(columns, rows, target, MY_STATE);
 
-        // Riempie board con le mosse piazzate fino alla configurazione del nodo
+        // Riempie board con le mosse piazzate fino alla configurazione corrente del nodo
         Node iter = node;
         while (iter != null) {                                                      // O(h)
-            board.setAt(iter.action.j, iter.action.i, iter.action.state);
+            board.setAt(iter.action.j, iter.action.i, iter.action.state);           // O(M+N)
             iter = iter.parent;
         }
 
@@ -356,6 +353,7 @@ public class GameTree {
     public void setOpponentMove(MNKCell move) {
         Node bestChild = null;
 
+        // Cerco il figlio con la mossa dell'avversario
         for (Node child : root.children) {                                                              // O([MAX_EVAL]) = O(c)
             if (child.action.equals(move)) {
                 bestChild = child;
@@ -363,7 +361,7 @@ public class GameTree {
             }
         }
 
-        // La mossa dell'avversario non era tra le mie previste
+        // Se la mossa dell'avversario non era tra le mie previste
         if (bestChild == null) {
             // Creo un nuovo nodo e genera il sotto-albero radicato
             Node new_root = new Node(root, move);
@@ -395,6 +393,7 @@ public class GameTree {
      *           Costo (ottimo): O(c)   c = costante
      * */
     public MNKCell nextMove() {
+        // Cerco il figlio con il punteggio maggiore
         Node nextChild = root.children.peek();
         for (Node child : root.children) {                                                          // O([MAX_EVAL]) = O(c)
             if (child.score > nextChild.score && child.alphabeta) {
