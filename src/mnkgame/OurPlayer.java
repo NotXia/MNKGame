@@ -45,6 +45,6 @@ public class OurPlayer implements MNKPlayer {
     }
 
     public String playerName() {
-        return "xIA";
+        return "Boneless";
     }
  }
