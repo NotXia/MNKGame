@@ -182,13 +182,9 @@ public class BoardStatus {
             // Progapazione
             if (s[i].aligned == target) {
                 for (int k=1; k<=target-1 && i-k>=0; k++) {                                             // O(K)
-                    /*
-                    * Interrompo la propagazione della mossa i-esima se:
-                    * - Incontro una mossa dell'avversario
-                    * - Incontro una mossa migliore della i-esima (necessita di meno mosse per vincere)
-                    * - Ho propagato K-1 volte
-                    * */
-                    if ( (s[i-k].aligned==0 && s[i-k].moves==0) || (s[i-k].aligned == target && s[i-k].moves <= s[i].moves) ) { break; }
+                    // Interrompo se incontro una mossa migliore della i-esima (necessita di meno mosse per vincere)
+                    if (s[i-k].aligned == target && s[i-k].moves <= s[i].moves) { break; }
+
                     s[i-k] = new Score(s[i]);
                 }
             }
