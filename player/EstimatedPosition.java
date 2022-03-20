@@ -1,4 +1,4 @@
-package mnkgame;
+package player;
 
 public class EstimatedPosition implements Comparable<EstimatedPosition> {
     public int x, y, score;

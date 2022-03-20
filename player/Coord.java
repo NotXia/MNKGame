@@ -1,4 +1,4 @@
-package mnkgame;
+package player;
 
 import java.util.Objects;
 

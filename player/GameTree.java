@@ -1,7 +1,8 @@
-package mnkgame;
+package player;
 
 import java.util.HashMap;
 import java.util.PriorityQueue;
+import mnkgame.*;
 
 public class GameTree {
     private Node root;

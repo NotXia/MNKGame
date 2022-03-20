@@ -1,4 +1,6 @@
-package mnkgame;
+package player;
+
+import mnkgame.*;
 
 public class BoardStatus {
     private class Score {

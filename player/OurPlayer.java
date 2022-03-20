@@ -1,4 +1,6 @@
-package mnkgame;
+package player;
+
+import mnkgame.*;
 
 public class OurPlayer implements MNKPlayer {
     private int rows, columns, target;
