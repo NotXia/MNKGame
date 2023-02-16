@@ -17,7 +17,7 @@ The task is to implement a resource efficient algorithm able to play the game (p
 
 
 ## Compiling
-From the project's root folder, run:
+From the project root folder, run:
 ```
 javac mnkgame/*.java
 javac player/*.java
